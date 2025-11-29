@@ -6,6 +6,8 @@ import { LogOut, Bell, Settings, ChevronRight, Loader2, Palette, GraduationCap, 
 import { EditProfileModal } from '../components/profile/EditProfileModal';
 import { AppSettingsModal } from '../components/profile/AppSettingsModal';
 import { cn } from '../lib/utils';
+import { fetchAIQuote, AIQuoteResponse } from '../lib/ai';
+import { Sparkles, RefreshCw } from 'lucide-react';
 
 interface ProfileData {
     full_name: string | null;
@@ -35,6 +37,24 @@ export function Profile() {
     const [loading, setLoading] = useState(true);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+    const [quote, setQuote] = useState<AIQuoteResponse | null>(null);
+    const [isQuoteLoading, setIsQuoteLoading] = useState(false);
+
+    const loadQuote = async () => {
+        try {
+            setIsQuoteLoading(true);
+            const data = await fetchAIQuote();
+            setQuote(data);
+        } catch (error) {
+            console.error("Failed to load quote", error);
+        } finally {
+            setIsQuoteLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadQuote();
+    }, []);
 
     const fetchProfile = async () => {
         if (!user) return;
@@ -187,6 +207,42 @@ export function Profile() {
                 </button>
             </div>
 
+            {/* AI Quote Section */}
+            <div className="space-y-3">
+                <div className="flex items-center justify-between ml-2">
+                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Daily Inspiration</h3>
+                    <button
+                        onClick={loadQuote}
+                        disabled={isQuoteLoading}
+                        className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-primary-600 transition-colors disabled:opacity-50"
+                    >
+                        <RefreshCw className={cn("h-4 w-4", isQuoteLoading && "animate-spin")} />
+                    </button>
+                </div>
+                <div className="glass-card rounded-3xl p-6 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <Sparkles className="h-24 w-24 text-primary-500" />
+                    </div>
+
+                    {isQuoteLoading && !quote ? (
+                        <div className="flex flex-col gap-2 animate-pulse">
+                            <div className="h-4 bg-slate-200 rounded w-3/4"></div>
+                            <div className="h-4 bg-slate-200 rounded w-1/2"></div>
+                            <div className="h-3 bg-slate-200 rounded w-1/4 mt-2 ml-auto"></div>
+                        </div>
+                    ) : (
+                        <div className="relative z-10">
+                            <p className="text-lg font-medium text-slate-700 italic leading-relaxed">
+                                "{quote?.quote || "Believe you can and you're halfway there."}"
+                            </p>
+                            <p className="text-sm text-primary-600 font-semibold mt-3 text-right">
+                                — {quote?.author || "Theodore Roosevelt"}
+                            </p>
+                        </div>
+                    )}
+                </div>
+            </div>
+
             {/* Appearance Section */}
             <div className="space-y-3">
                 <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider ml-2">Appearance</h3>
@@ -307,7 +363,7 @@ export function Profile() {
             <div className="text-center py-6">
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/30 text-slate-500 text-xs font-medium">
                     <Info className="h-3 w-3" />
-                    <span>Version 1.2.0 • Made with ❤️ by Antigravity</span>
+                    <span>Version 1.2.0 • Made By Ambalavanan </span>
                 </div>
             </div>
 
