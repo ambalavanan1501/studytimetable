@@ -1,127 +1,227 @@
-export interface CourseInput {
-    subject_name: string;
-    subject_code: string;
-    type: string;
-    slot: string;
-    room_number: string;
-    credit: number;
+export interface TimeBlock {
+    day: string;
+    startTime: string;
+    endTime: string;
 }
 
 export interface ParsedEntry {
-    day: string;
-    start_time: string;
-    end_time: string;
     subject_name: string;
     subject_code: string;
     type: 'theory' | 'lab';
+    slot_code: string; // The specific slot (e.g., "A1")
+    slot_label: string; // The user input (e.g., "A1+TA1")
     room_number: string;
-    slot_code: string;
-    slot_label: string;
     credit: number;
+    day: string;
+    start_time: string;
+    end_time: string;
 }
 
-export const SLOT_TIMINGS: Record<string, { start: string; end: string; day: string }> = {
-    // Theory Slots (Morning)
-    'A1': { start: '08:00', end: '08:50', day: 'Monday' },
-    'B1': { start: '09:00', end: '09:50', day: 'Tuesday' },
-    'C1': { start: '10:00', end: '10:50', day: 'Wednesday' },
-    'D1': { start: '11:00', end: '11:50', day: 'Thursday' },
-    'E1': { start: '12:00', end: '12:50', day: 'Friday' },
-    'F1': { start: '08:00', end: '08:50', day: 'Tuesday' }, // Example mapping, needs verification
-    'G1': { start: '09:00', end: '09:50', day: 'Wednesday' },
+// Master Slot Mapping based on VIT FFCS
+// Format: "SLOT": [{ day: "Day", startTime: "HH:MM", endTime: "HH:MM" }]
+const SLOT_MAPPING: Record<string, TimeBlock[]> = {
+    // --- Theory Slots ---
+    'A1': [
+        { day: 'Monday', startTime: '08:00', endTime: '08:50' },
+        { day: 'Wednesday', startTime: '09:00', endTime: '09:50' }
+    ],
+    'A2': [
+        { day: 'Monday', startTime: '14:00', endTime: '14:50' },
+        { day: 'Wednesday', startTime: '15:00', endTime: '15:50' }
+    ],
+    'B1': [
+        { day: 'Tuesday', startTime: '08:00', endTime: '08:50' },
+        { day: 'Thursday', startTime: '09:00', endTime: '09:50' }
+    ],
+    'B2': [
+        { day: 'Tuesday', startTime: '14:00', endTime: '14:50' },
+        { day: 'Thursday', startTime: '15:00', endTime: '15:50' }
+    ],
+    'C1': [
+        { day: 'Wednesday', startTime: '08:00', endTime: '08:50' },
+        { day: 'Friday', startTime: '09:00', endTime: '09:50' }
+    ],
+    'C2': [
+        { day: 'Wednesday', startTime: '14:00', endTime: '14:50' },
+        { day: 'Friday', startTime: '15:00', endTime: '15:50' }
+    ],
+    'D1': [
+        { day: 'Thursday', startTime: '08:00', endTime: '08:50' },
+        { day: 'Monday', startTime: '10:00', endTime: '10:50' }
+    ],
+    'D2': [
+        { day: 'Thursday', startTime: '14:00', endTime: '14:50' },
+        { day: 'Monday', startTime: '16:00', endTime: '16:50' }
+    ],
+    'E1': [
+        { day: 'Friday', startTime: '08:00', endTime: '08:50' },
+        { day: 'Tuesday', startTime: '10:00', endTime: '10:50' }
+    ],
+    'E2': [
+        { day: 'Friday', startTime: '14:00', endTime: '14:50' },
+        { day: 'Tuesday', startTime: '16:00', endTime: '16:50' }
+    ],
+    'F1': [
+        { day: 'Monday', startTime: '09:00', endTime: '09:50' },
+        { day: 'Wednesday', startTime: '10:00', endTime: '10:50' }
+    ],
+    'F2': [
+        { day: 'Monday', startTime: '15:00', endTime: '15:50' },
+        { day: 'Wednesday', startTime: '16:00', endTime: '16:50' }
+    ],
+    'G1': [
+        { day: 'Tuesday', startTime: '09:00', endTime: '09:50' },
+        { day: 'Thursday', startTime: '10:00', endTime: '10:50' }
+    ],
+    'G2': [
+        { day: 'Tuesday', startTime: '15:00', endTime: '15:50' },
+        { day: 'Thursday', startTime: '16:00', endTime: '16:50' }
+    ],
 
-    // Theory Slots (Evening)
-    'A2': { start: '14:00', end: '14:50', day: 'Monday' },
-    'B2': { start: '15:00', end: '15:50', day: 'Tuesday' },
-    'C2': { start: '16:00', end: '16:50', day: 'Wednesday' },
-    'D2': { start: '17:00', end: '17:50', day: 'Thursday' },
-    'E2': { start: '18:00', end: '18:50', day: 'Friday' },
+    // --- Tutorial/Extra Theory Slots ---
+    'TA1': [{ day: 'Friday', startTime: '10:00', endTime: '10:50' }],
+    'TA2': [{ day: 'Friday', startTime: '16:00', endTime: '16:50' }],
+    'TB1': [{ day: 'Monday', startTime: '11:00', endTime: '11:50' }],
+    'TB2': [{ day: 'Monday', startTime: '17:00', endTime: '17:50' }],
+    'TC1': [{ day: 'Tuesday', startTime: '11:00', endTime: '11:50' }],
+    'TC2': [{ day: 'Tuesday', startTime: '17:00', endTime: '17:50' }],
+    'TD1': [{ day: 'Friday', startTime: '12:00', endTime: '12:50' }],
+    'TD2': [{ day: 'Wednesday', startTime: '17:00', endTime: '17:50' }],
+    'TE1': [{ day: 'Thursday', startTime: '11:00', endTime: '11:50' }],
+    'TE2': [
+        { day: 'Thursday', startTime: '17:00', endTime: '17:50' },
+        { day: 'Friday', startTime: '17:00', endTime: '17:50' }
+    ],
+    'TF1': [{ day: 'Friday', startTime: '11:00', endTime: '11:50' }],
+    // TF2 is usually Fri 17:00, but mapped to TE2 as per user request. 
+    // Keeping TF2 as alias just in case.
+    'TF2': [{ day: 'Friday', startTime: '17:00', endTime: '17:50' }],
+    'TG1': [{ day: 'Monday', startTime: '12:00', endTime: '12:50' }],
+    'TG2': [{ day: 'Monday', startTime: '18:00', endTime: '18:50' }],
 
-    // Lab Slots (L) - usually mapped to combinations like L1+L2 etc.
-    // This is a simplified mapping. Real FFCS is complex.
+    // --- New Slots from User Request ---
+    'TAA1': [{ day: 'Tuesday', startTime: '12:00', endTime: '12:50' }],
+    'TAA2': [{ day: 'Tuesday', startTime: '18:00', endTime: '18:50' }],
+    'V1': [{ day: 'Wednesday', startTime: '11:00', endTime: '11:50' }],
+    'V2': [{ day: 'Wednesday', startTime: '12:00', endTime: '12:50' }],
+    'TBB2': [{ day: 'Wednesday', startTime: '18:00', endTime: '18:50' }],
+    'TCC1': [{ day: 'Thursday', startTime: '12:00', endTime: '12:50' }],
+    'TCC2': [{ day: 'Thursday', startTime: '18:00', endTime: '18:50' }],
+    'TDD2': [{ day: 'Friday', startTime: '18:00', endTime: '18:50' }],
+
+    // --- Lab Slots (L1 to L60) ---
+    // Morning Labs (08:00 - 13:20 approx, broken into hours)
+    'L1': [{ day: 'Monday', startTime: '08:00', endTime: '08:50' }],
+    'L2': [{ day: 'Monday', startTime: '08:51', endTime: '09:40' }],
+    'L3': [{ day: 'Monday', startTime: '09:51', endTime: '10:40' }],
+    'L4': [{ day: 'Monday', startTime: '10:41', endTime: '11:30' }],
+    'L5': [{ day: 'Monday', startTime: '11:40', endTime: '12:30' }],
+    'L6': [{ day: 'Monday', startTime: '12:31', endTime: '13:20' }],
+
+    'L7': [{ day: 'Tuesday', startTime: '08:00', endTime: '08:50' }],
+    'L8': [{ day: 'Tuesday', startTime: '08:51', endTime: '09:40' }],
+    'L9': [{ day: 'Tuesday', startTime: '09:51', endTime: '10:40' }],
+    'L10': [{ day: 'Tuesday', startTime: '10:41', endTime: '11:30' }],
+    'L11': [{ day: 'Tuesday', startTime: '11:40', endTime: '12:30' }],
+    'L12': [{ day: 'Tuesday', startTime: '12:31', endTime: '13:20' }],
+
+    'L13': [{ day: 'Wednesday', startTime: '08:00', endTime: '08:50' }],
+    'L14': [{ day: 'Wednesday', startTime: '08:51', endTime: '09:40' }],
+    'L15': [{ day: 'Wednesday', startTime: '09:51', endTime: '10:40' }],
+    'L16': [{ day: 'Wednesday', startTime: '10:41', endTime: '11:30' }],
+    'L17': [{ day: 'Wednesday', startTime: '11:40', endTime: '12:30' }],
+    'L18': [{ day: 'Wednesday', startTime: '12:31', endTime: '13:20' }],
+
+    'L19': [{ day: 'Thursday', startTime: '08:00', endTime: '08:50' }],
+    'L20': [{ day: 'Thursday', startTime: '08:51', endTime: '09:40' }],
+    'L21': [{ day: 'Thursday', startTime: '09:51', endTime: '10:40' }],
+    'L22': [{ day: 'Thursday', startTime: '10:41', endTime: '11:30' }],
+    'L23': [{ day: 'Thursday', startTime: '11:40', endTime: '12:30' }],
+    'L24': [{ day: 'Thursday', startTime: '12:31', endTime: '13:20' }],
+
+    'L25': [{ day: 'Friday', startTime: '08:00', endTime: '08:50' }],
+    'L26': [{ day: 'Friday', startTime: '08:51', endTime: '09:40' }],
+    'L27': [{ day: 'Friday', startTime: '09:51', endTime: '10:40' }],
+    'L28': [{ day: 'Friday', startTime: '10:41', endTime: '11:30' }],
+    'L29': [{ day: 'Friday', startTime: '11:40', endTime: '12:30' }],
+    'L30': [{ day: 'Friday', startTime: '12:31', endTime: '13:20' }],
+
+    // Afternoon Labs (14:00 - 19:20 approx)
+    'L31': [{ day: 'Monday', startTime: '14:00', endTime: '14:50' }],
+    'L32': [{ day: 'Monday', startTime: '14:51', endTime: '15:40' }],
+    'L33': [{ day: 'Monday', startTime: '15:51', endTime: '16:40' }],
+    'L34': [{ day: 'Monday', startTime: '16:41', endTime: '17:30' }],
+    'L35': [{ day: 'Monday', startTime: '17:40', endTime: '18:30' }],
+    'L36': [{ day: 'Monday', startTime: '18:31', endTime: '19:20' }],
+
+    'L37': [{ day: 'Tuesday', startTime: '14:00', endTime: '14:50' }],
+    'L38': [{ day: 'Tuesday', startTime: '14:51', endTime: '15:40' }],
+    'L39': [{ day: 'Tuesday', startTime: '15:51', endTime: '16:40' }],
+    'L40': [{ day: 'Tuesday', startTime: '16:41', endTime: '17:30' }],
+    'L41': [{ day: 'Tuesday', startTime: '17:40', endTime: '18:30' }],
+    'L42': [{ day: 'Tuesday', startTime: '18:31', endTime: '19:20' }],
+
+    'L43': [{ day: 'Wednesday', startTime: '14:00', endTime: '14:50' }],
+    'L44': [{ day: 'Wednesday', startTime: '14:51', endTime: '15:40' }],
+    'L45': [{ day: 'Wednesday', startTime: '15:51', endTime: '16:40' }],
+    'L46': [{ day: 'Wednesday', startTime: '16:41', endTime: '17:30' }],
+    'L47': [{ day: 'Wednesday', startTime: '17:40', endTime: '18:30' }],
+    'L48': [{ day: 'Wednesday', startTime: '18:31', endTime: '19:20' }],
+
+    'L49': [{ day: 'Thursday', startTime: '14:00', endTime: '14:50' }],
+    'L50': [{ day: 'Thursday', startTime: '14:51', endTime: '15:40' }],
+    'L51': [{ day: 'Thursday', startTime: '15:51', endTime: '16:40' }],
+    'L52': [{ day: 'Thursday', startTime: '16:41', endTime: '17:30' }],
+    'L53': [{ day: 'Thursday', startTime: '17:40', endTime: '18:30' }],
+    'L54': [{ day: 'Thursday', startTime: '18:31', endTime: '19:20' }],
+
+    'L55': [{ day: 'Friday', startTime: '14:00', endTime: '14:50' }],
+    'L56': [{ day: 'Friday', startTime: '14:51', endTime: '15:40' }],
+    'L57': [{ day: 'Friday', startTime: '15:51', endTime: '16:40' }],
+    'L58': [{ day: 'Friday', startTime: '16:41', endTime: '17:30' }],
+    'L59': [{ day: 'Friday', startTime: '17:40', endTime: '18:30' }],
+    'L60': [{ day: 'Friday', startTime: '18:31', endTime: '19:20' }],
 };
 
-// Helper to map slots to days/times. 
-// Note: This is a simplified implementation. A full implementation requires the complete slot mapping table.
-function getSlotDetails(slot: string): { day: string; start: string; end: string } | null {
-    // Basic hardcoded slots for demo purposes
-    const map: Record<string, any> = {
-        'A1': { day: 'Monday', start: '08:00', end: '08:50' },
-        'TA1': { day: 'Thursday', start: '09:00', end: '09:50' }, // Example
-        'TAA1': { day: 'Friday', start: '10:00', end: '10:50' }, // Example
-
-        'B1': { day: 'Tuesday', start: '09:00', end: '09:50' },
-        'TB1': { day: 'Friday', start: '08:00', end: '08:50' },
-
-        'C1': { day: 'Wednesday', start: '10:00', end: '10:50' },
-        'TC1': { day: 'Monday', start: '09:00', end: '09:50' },
-
-        'D1': { day: 'Thursday', start: '11:00', end: '11:50' },
-        'TD1': { day: 'Tuesday', start: '10:00', end: '10:50' },
-
-        'E1': { day: 'Friday', start: '12:00', end: '12:50' },
-        'TE1': { day: 'Wednesday', start: '11:00', end: '11:50' },
-
-        'F1': { day: 'Monday', start: '12:00', end: '12:50' },
-        'TF1': { day: 'Thursday', start: '12:00', end: '12:50' },
-
-        'G1': { day: 'Tuesday', start: '12:00', end: '12:50' },
-        'TG1': { day: 'Friday', start: '11:00', end: '11:50' },
-
-        // Afternoon
-        'A2': { day: 'Monday', start: '14:00', end: '14:50' },
-        'TA2': { day: 'Thursday', start: '15:00', end: '15:50' },
-
-        'B2': { day: 'Tuesday', start: '15:00', end: '15:50' },
-        'TB2': { day: 'Friday', start: '14:00', end: '14:50' },
-
-        'C2': { day: 'Wednesday', start: '16:00', end: '16:50' },
-        'TC2': { day: 'Monday', start: '15:00', end: '15:50' },
-
-        'D2': { day: 'Thursday', start: '17:00', end: '17:50' },
-        'TD2': { day: 'Tuesday', start: '16:00', end: '16:50' },
-
-        'E2': { day: 'Friday', start: '18:00', end: '18:50' },
-        'TE2': { day: 'Wednesday', start: '17:00', end: '17:50' },
-
-        'F2': { day: 'Monday', start: '18:00', end: '18:50' },
-        'TF2': { day: 'Thursday', start: '18:00', end: '18:50' },
-
-        'G2': { day: 'Tuesday', start: '18:00', end: '18:50' },
-        'TG2': { day: 'Friday', start: '17:00', end: '17:50' },
-    };
-
-    return map[slot.toUpperCase()] || null;
+export interface CourseInput {
+    subject_name: string;
+    subject_code: string;
+    type: 'theory' | 'lab';
+    slot: string;
+    room_number: string;
+    credit: number;
 }
 
 export function parseCourseEntries(inputs: CourseInput[]): { entries: ParsedEntry[], errors: string[] } {
     const entries: ParsedEntry[] = [];
     const errors: string[] = [];
 
-    inputs.forEach((input, index) => {
-        if (!input.subject_name || !input.slot) return;
-
-        // Split slots by '+'
-        const slots = input.slot.split('+').map(s => s.trim());
+    inputs.forEach((input) => {
+        // Split slots by '+' (e.g., "A1+TA1" -> ["A1", "TA1"])
+        const slots = input.slot.toUpperCase().split('+').map(s => s.trim());
 
         slots.forEach(slot => {
-            const details = getSlotDetails(slot);
-            if (details) {
+            const timeBlocks = SLOT_MAPPING[slot];
+
+            if (!timeBlocks) {
+                errors.push(`Invalid slot "${slot}" for subject "${input.subject_name}"`);
+                return;
+            }
+
+            timeBlocks.forEach(block => {
                 entries.push({
-                    day: details.day,
-                    start_time: details.start,
-                    end_time: details.end,
                     subject_name: input.subject_name,
                     subject_code: input.subject_code,
-                    type: input.type as 'theory' | 'lab',
-                    room_number: input.room_number,
+                    type: input.type,
                     slot_code: slot,
                     slot_label: input.slot,
-                    credit: input.credit
+                    room_number: input.room_number,
+                    credit: input.credit,
+                    day: block.day,
+                    start_time: block.startTime,
+                    end_time: block.endTime
                 });
-            } else {
-                errors.push(`Row ${index + 1}: Unknown slot code '${slot}'`);
-            }
+            });
         });
     });
 
