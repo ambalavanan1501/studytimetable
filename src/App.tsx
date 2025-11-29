@@ -6,7 +6,8 @@ import { Profile } from './pages/Profile';
 import { Attendance } from './pages/Attendance';
 import { Layout } from './components/Layout';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-
+import { Toaster } from 'react-hot-toast';
+import { ReloadPrompt } from './components/ReloadPrompt';
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
     const { user, loading } = useAuth();
 
@@ -25,6 +26,7 @@ function App() {
     return (
         <Router>
             <AuthProvider>
+                <ReloadPrompt />
                 <Routes>
                     <Route path="/login" element={<Login />} />
                     <Route path="/" element={
