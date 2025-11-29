@@ -34,6 +34,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return () => subscription.unsubscribe();
     }, []);
 
+    useEffect(() => {
+        if (!user) return;
+
+        const now = new Date();
+        const midnight = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate() + 1, // Tomorrow
+            0, 0, 0 // 00:00:00
+        );
+
+        const timeUntilMidnight = midnight.getTime() - now.getTime();
+
+        const timer = setTimeout(() => {
+            signOut();
+        }, timeUntilMidnight);
+
+        return () => clearTimeout(timer);
+    }, [user]);
+
     const signOut = async () => {
         await supabase.auth.signOut();
     };
