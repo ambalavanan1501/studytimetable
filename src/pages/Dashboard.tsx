@@ -25,6 +25,7 @@ export function Dashboard() {
     const [attendanceGoal, setAttendanceGoal] = useState(75);
     const [cgpa, setCgpa] = useState(0);
     const [credits, setCredits] = useState(0);
+    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
     useEffect(() => {
         // Live Clock
@@ -45,7 +46,7 @@ export function Dashboard() {
         const fetchDashboardData = async () => {
             const { data: profile } = await supabase
                 .from('profiles')
-                .select('full_name, attendance_goal, cgpa, credits')
+                .select('full_name, attendance_goal, cgpa, credits, avatar_url')
                 .eq('id', user.id)
                 .single();
 
@@ -54,6 +55,7 @@ export function Dashboard() {
                 if (profile.attendance_goal) setAttendanceGoal(profile.attendance_goal);
                 if (profile.cgpa) setCgpa(profile.cgpa);
                 if (profile.credits) setCredits(profile.credits);
+                if (profile.avatar_url) setAvatarUrl(profile.avatar_url);
             }
 
             const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
@@ -110,11 +112,18 @@ export function Dashboard() {
         <div className="p-6 space-y-8 pb-24">
             {/* Welcome Header & Clock */}
             <div className="mt-4 flex justify-between items-end">
-                <div>
-                    <h1 className="text-3xl font-bold text-slate-800">
-                        Hello, <span className="text-primary-600">{userName}</span>
-                    </h1>
-                    <p className="text-slate-500 mt-1">Ready to learn?</p>
+                <div className="flex items-center gap-4">
+                    {avatarUrl && (
+                        <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white shadow-md">
+                            <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+                        </div>
+                    )}
+                    <div>
+                        <h1 className="text-3xl font-bold text-slate-800">
+                            Hello, <span className="text-primary-600">{userName}</span>
+                        </h1>
+                        <p className="text-slate-500 mt-1">Ready to learn?</p>
+                    </div>
                 </div>
                 <div className="text-right hidden sm:block">
                     <div className="text-2xl font-bold text-slate-700 font-mono">

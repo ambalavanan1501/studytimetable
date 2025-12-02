@@ -20,6 +20,7 @@ interface ProfileData {
     accent_color: string;
     cgpa: number;
     credits: number;
+    avatar_url: string | null;
 }
 
 const THEMES = [
@@ -39,6 +40,7 @@ export function Profile() {
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
     const [quote, setQuote] = useState<AIQuoteResponse | null>(null);
     const [isQuoteLoading, setIsQuoteLoading] = useState(false);
+    const [uploading, setUploading] = useState(false);
 
     const loadQuote = async () => {
         try {
@@ -80,7 +82,8 @@ export function Profile() {
                 attendance_goal: 75,
                 accent_color: 'purple',
                 cgpa: 0,
-                credits: 0
+                credits: 0,
+                avatar_url: null
             };
             setProfile(profileData);
 
@@ -141,6 +144,50 @@ export function Profile() {
             .eq('id', user.id);
     };
 
+    const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        try {
+            setUploading(true);
+
+            if (!event.target.files || event.target.files.length === 0) {
+                throw new Error('You must select an image to upload.');
+            }
+
+            const file = event.target.files[0];
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Math.random()}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('avatars')
+                .upload(filePath, file);
+
+            if (uploadError) {
+                throw uploadError;
+            }
+
+            const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+            const publicUrl = data.publicUrl;
+
+            if (user && profile) {
+                const { error: updateError } = await supabase
+                    .from('profiles')
+                    .update({ avatar_url: publicUrl })
+                    .eq('id', user.id);
+
+                if (updateError) {
+                    throw updateError;
+                }
+
+                setProfile({ ...profile, avatar_url: publicUrl });
+            }
+        } catch (error) {
+            alert('Error uploading avatar!');
+            console.error(error);
+        } finally {
+            setUploading(false);
+        }
+    };
+
     const handleResetData = async () => {
         if (!user || !confirm('Are you sure you want to delete all timetable and attendance data? This action cannot be undone.')) return;
 
@@ -168,8 +215,30 @@ export function Profile() {
 
             {/* User Card */}
             <div className="glass-card rounded-3xl p-6 flex items-center gap-4">
-                <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-pink-500 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg">
-                    {profile?.full_name ? profile.full_name[0].toUpperCase() : user?.email?.[0].toUpperCase()}
+                <div className="relative group">
+                    <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-pink-500 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg overflow-hidden">
+                        {profile?.avatar_url ? (
+                            <img
+                                src={profile.avatar_url}
+                                alt="Avatar"
+                                className="w-full h-full object-cover"
+                            />
+                        ) : (
+                            profile?.full_name ? profile.full_name[0].toUpperCase() : user?.email?.[0].toUpperCase()
+                        )}
+                    </div>
+                    <label className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                        <span className="text-white text-xs font-medium">
+                            {uploading ? '...' : 'Edit'}
+                        </span>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            disabled={uploading}
+                            className="hidden"
+                        />
+                    </label>
                 </div>
                 <div className="overflow-hidden flex-1">
                     <h2 className="text-lg font-bold text-slate-800 truncate">
