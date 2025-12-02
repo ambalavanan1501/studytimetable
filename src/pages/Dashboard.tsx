@@ -254,7 +254,7 @@ export function Dashboard() {
             </div>
 
             {/* Productivity Widgets */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-48">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <StickyNoteWidget />
                 <CountdownWidget />
                 <MiniTaskWidget />
