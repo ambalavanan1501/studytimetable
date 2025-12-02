@@ -4,6 +4,9 @@ import { Timetable } from './pages/Timetable';
 import { Dashboard } from './pages/Dashboard';
 import { Profile } from './pages/Profile';
 import { Developer } from './pages/Developer';
+import { StickyNotes } from './pages/StickyNotes';
+import { Countdown } from './pages/Countdown';
+import { Tasks } from './pages/Tasks';
 import { Attendance } from './pages/Attendance';
 import { Layout } from './components/Layout';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
@@ -61,6 +64,27 @@ function App() {
                         <ProtectedRoute>
                             <Layout>
                                 <Developer />
+                            </Layout>
+                        </ProtectedRoute>
+                    } />
+                    <Route path="/notes" element={
+                        <ProtectedRoute>
+                            <Layout>
+                                <StickyNotes />
+                            </Layout>
+                        </ProtectedRoute>
+                    } />
+                    <Route path="/countdown" element={
+                        <ProtectedRoute>
+                            <Layout>
+                                <Countdown />
+                            </Layout>
+                        </ProtectedRoute>
+                    } />
+                    <Route path="/tasks" element={
+                        <ProtectedRoute>
+                            <Layout>
+                                <Tasks />
                             </Layout>
                         </ProtectedRoute>
                     } />

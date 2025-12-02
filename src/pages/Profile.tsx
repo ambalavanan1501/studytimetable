@@ -432,7 +432,7 @@ export function Profile() {
             <div className="text-center py-6">
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/30 text-slate-500 text-xs font-medium">
                     <Info className="h-3 w-3" />
-                    <span>Version 1.2.0 • Made By Ambalavanan </span>
+                    <span>Version 2.9.0 • Made By Ambalavanan </span>
                 </div>
             </div>
 

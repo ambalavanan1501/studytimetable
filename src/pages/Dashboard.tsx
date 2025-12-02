@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Clock, MapPin, Quote, Radio, BarChart3, ListChecks } from 'lucide-react';
+import { StickyNoteWidget } from '../components/dashboard/StickyNoteWidget';
+import { CountdownWidget } from '../components/dashboard/CountdownWidget';
+import { MiniTaskWidget } from '../components/dashboard/MiniTaskWidget';
 import { cn } from '../lib/utils';
 
 const QUOTES = [
@@ -248,6 +251,13 @@ export function Dashboard() {
                     <div className="text-2xl font-bold text-slate-800 mb-1">{credits > 0 ? credits : '-'}</div>
                     <div className="text-xs text-slate-500 font-medium">Credits</div>
                 </div>
+            </div>
+
+            {/* Productivity Widgets */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-48">
+                <StickyNoteWidget />
+                <CountdownWidget />
+                <MiniTaskWidget />
             </div>
 
             {/* Quote of the Day */}
