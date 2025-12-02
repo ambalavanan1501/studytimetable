@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Download, Upload, FileJson, FileText } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Upload, FileJson, FileText } from 'lucide-react';
 import { db } from '../lib/db';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
