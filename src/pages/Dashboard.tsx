@@ -118,7 +118,7 @@ export function Dashboard() {
                 </div>
                 <div className="text-right hidden sm:block">
                     <div className="text-2xl font-bold text-slate-700 font-mono">
-                        {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+                        {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
                     </div>
                     <div className="text-xs text-slate-400 font-medium">
                         {currentTime.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })}
@@ -132,7 +132,7 @@ export function Dashboard() {
                     {currentTime.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })}
                 </div>
                 <div className="text-xl font-bold text-slate-700 font-mono">
-                    {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+                    {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
                 </div>
             </div>
 

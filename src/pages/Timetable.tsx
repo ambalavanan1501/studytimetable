@@ -82,6 +82,14 @@ export function Timetable() {
         setIsEditModalOpen(true);
     };
 
+    const formatTime = (time: string) => {
+        const [hours, minutes] = time.split(':');
+        const hour = parseInt(hours);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const hour12 = hour % 12 || 12;
+        return `${hour12}:${minutes} ${ampm}`;
+    };
+
     return (
         <div className="p-6 pb-24 space-y-6">
             <div className="flex justify-between items-center mt-4">
@@ -152,7 +160,7 @@ export function Timetable() {
                             <div className="flex items-center gap-4 text-sm text-slate-500">
                                 <div className="flex items-center gap-1.5">
                                     <Clock className="h-4 w-4 text-primary-400" />
-                                    <span className="font-medium">{entry.start_time.slice(0, 5)} - {entry.end_time.slice(0, 5)}</span>
+                                    <span className="font-medium">{formatTime(entry.start_time)} - {formatTime(entry.end_time)}</span>
                                 </div>
                                 {entry.room_number && (
                                     <div className="flex items-center gap-1.5">
