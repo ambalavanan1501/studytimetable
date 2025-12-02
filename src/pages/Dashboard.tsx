@@ -262,6 +262,19 @@ export function Dashboard() {
                     <p className="text-sm text-primary-600 font-medium">- {quote.author}</p>
                 </div>
             </div>
+
+            {/* Developer Button */}
+            <div className="flex justify-center">
+                <button
+                    onClick={() => window.location.href = '/developer'}
+                    className="glass-card px-6 py-2 rounded-full flex items-center gap-2 text-slate-500 font-medium text-sm hover:bg-white/50 transition-colors group"
+                >
+                    <span>Made by Developer</span>
+                    <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center group-hover:bg-primary-100 group-hover:text-primary-600 transition-colors">
+                        <span className="text-[10px]">Dev</span>
+                    </div>
+                </button>
+            </div>
         </div>
     );
 }

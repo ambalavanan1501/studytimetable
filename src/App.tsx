@@ -3,6 +3,7 @@ import { Login } from './pages/Login';
 import { Timetable } from './pages/Timetable';
 import { Dashboard } from './pages/Dashboard';
 import { Profile } from './pages/Profile';
+import { Developer } from './pages/Developer';
 import { Attendance } from './pages/Attendance';
 import { Layout } from './components/Layout';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
@@ -53,6 +54,13 @@ function App() {
                         <ProtectedRoute>
                             <Layout>
                                 <Profile />
+                            </Layout>
+                        </ProtectedRoute>
+                    } />
+                    <Route path="/developer" element={
+                        <ProtectedRoute>
+                            <Layout>
+                                <Developer />
                             </Layout>
                         </ProtectedRoute>
                     } />
