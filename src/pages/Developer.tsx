@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Mail, Phone, GraduationCap, Github, Instagram, Globe } from 'lucide-react';
+import { useNotification } from '../context/NotificationContext';
 
 export function Developer() {
     const navigate = useNavigate();
@@ -81,7 +82,56 @@ export function Developer() {
                 <div className="text-center text-slate-400 text-sm">
                     <p>Designed & Built By Ambalavanan</p>
                 </div>
+
+                <NotificationControls />
             </div>
+        </div>
+    );
+}
+
+function NotificationControls() {
+    const { permission, requestPermission, sendTestNotification, subscription } = useNotification();
+
+    return (
+        <div className="glass-card rounded-3xl p-6 space-y-4">
+            <h3 className="text-lg font-bold text-slate-800">Notifications</h3>
+
+            <div className="flex items-center justify-between p-3 bg-white/50 rounded-xl">
+                <span className="text-slate-600 font-medium">Status</span>
+                <span className={`px-3 py-1 rounded-full text-xs font-bold ${permission === 'granted' ? 'bg-green-100 text-green-700' :
+                    permission === 'denied' ? 'bg-red-100 text-red-700' :
+                        'bg-yellow-100 text-yellow-700'
+                    }`}>
+                    {permission.toUpperCase()}
+                </span>
+            </div>
+
+            {permission !== 'granted' && (
+                <button
+                    onClick={requestPermission}
+                    className="w-full py-3 bg-primary-600 text-white rounded-xl font-semibold hover:bg-primary-700 transition-colors"
+                >
+                    Enable Notifications
+                </button>
+            )}
+
+            {permission === 'granted' && (
+                <div className="space-y-3">
+                    <button
+                        onClick={sendTestNotification}
+                        className="w-full py-3 bg-white border-2 border-primary-100 text-primary-600 rounded-xl font-semibold hover:bg-primary-50 transition-colors"
+                    >
+                        Send Test Notification
+                    </button>
+
+                    <div className="p-3 bg-slate-100 rounded-xl overflow-hidden">
+                        <p className="text-xs text-slate-500 mb-1">Subscription Endpoint</p>
+                        <code className="text-[10px] text-slate-700 break-all block">
+                            {subscription ? subscription.endpoint : 'Not subscribed'}
+                        </code>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

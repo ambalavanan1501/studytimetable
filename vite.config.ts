@@ -9,6 +9,9 @@ export default defineConfig({
         react(),
         VitePWA({
             registerType: 'autoUpdate',
+            strategies: 'injectManifest',
+            srcDir: 'src',
+            filename: 'service-worker.ts',
             includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
             manifest: {
                 id: '/',
@@ -65,32 +68,9 @@ export default defineConfig({
                     }
                 ]
             },
-            workbox: {
-                runtimeCaching: [
-                    {
-                        urlPattern: /^https:\/\/openrouter\.ai\/api\/.*/i,
-                        handler: 'NetworkFirst',
-                        options: {
-                            cacheName: 'api-cache',
-                            expiration: {
-                                maxEntries: 10,
-                                maxAgeSeconds: 60 * 60 * 24 // 24 hours
-                            },
-                            networkTimeoutSeconds: 10
-                        }
-                    },
-                    {
-                        urlPattern: /\.(?:png|jpg|jpeg|svg|gif)$/,
-                        handler: 'CacheFirst',
-                        options: {
-                            cacheName: 'image-cache',
-                            expiration: {
-                                maxEntries: 50,
-                                maxAgeSeconds: 30 * 24 * 60 * 60 // 30 Days
-                            }
-                        }
-                    }
-                ]
+            devOptions: {
+                enabled: true,
+                type: 'module',
             }
         })
     ],

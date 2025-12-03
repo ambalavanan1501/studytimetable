@@ -7,7 +7,8 @@
         "dev": "vite",
         "build": "tsc && vite build",
         "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-        "preview": "vite preview"
+        "preview": "vite preview",
+        "dev:all": "concurrently \"npm run dev\" \"cd backend && npm start\""
     },
     "dependencies": {
         "@radix-ui/react-tabs": "^1.1.13",
@@ -30,6 +31,7 @@
         "@types/react-dom": "^18.2.15",
         "@vitejs/plugin-react": "^4.2.0",
         "autoprefixer": "^10.4.16",
+        "concurrently": "^9.2.1",
         "postcss": "^8.4.31",
         "tailwindcss": "^3.3.5",
         "tailwindcss-animate": "^1.0.7",
