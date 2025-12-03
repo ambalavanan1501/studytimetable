@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Bell, Settings, ChevronRight, Loader2, Palette, GraduationCap, Target, Trash2, Info } from 'lucide-react';
+import { LogOut, Settings, ChevronRight, Loader2, Palette, GraduationCap, Target, Trash2, Info } from 'lucide-react';
 import { EditProfileModal } from '../components/profile/EditProfileModal';
 import { AppSettingsModal } from '../components/profile/AppSettingsModal';
 import { cn } from '../lib/utils';
@@ -14,7 +14,7 @@ interface ProfileData {
     university: string | null;
     branch: string | null;
     semester: string | null;
-    notifications_enabled: boolean;
+
     theme_preference: string;
     attendance_goal: number;
     accent_color: string;
@@ -77,7 +77,7 @@ export function Profile() {
                 university: '',
                 branch: '',
                 semester: '',
-                notifications_enabled: true,
+
                 theme_preference: 'light',
                 attendance_goal: 75,
                 accent_color: 'purple',
@@ -105,20 +105,7 @@ export function Profile() {
         navigate('/login');
     };
 
-    const toggleNotification = async () => {
-        if (!user || !profile) return;
 
-        const newValue = !profile.notifications_enabled;
-        setProfile({ ...profile, notifications_enabled: newValue });
-
-        await supabase
-            .from('profiles')
-            .upsert({
-                id: user.id,
-                notifications_enabled: newValue,
-                updated_at: new Date().toISOString()
-            });
-    };
 
     const handleThemeChange = async (color: string) => {
         if (!user || !profile) return;
@@ -373,26 +360,7 @@ export function Profile() {
                 <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider ml-2">Preferences</h3>
                 <div className="glass-card rounded-3xl overflow-hidden">
                     <div className="divide-y divide-slate-100">
-                        <button
-                            onClick={toggleNotification}
-                            className="w-full p-4 flex items-center justify-between hover:bg-white/40 transition-colors"
-                        >
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600">
-                                    <Bell className="h-4 w-4" />
-                                </div>
-                                <span className="font-medium text-slate-700">Notifications</span>
-                            </div>
-                            <div className={cn(
-                                "w-11 h-6 rounded-full transition-colors relative",
-                                profile?.notifications_enabled ? "bg-primary-500" : "bg-slate-200"
-                            )}>
-                                <div className={cn(
-                                    "absolute top-1 w-4 h-4 rounded-full bg-white transition-transform",
-                                    profile?.notifications_enabled ? "left-6" : "left-1"
-                                )} />
-                            </div>
-                        </button>
+
 
                         <button
                             onClick={() => setIsSettingsModalOpen(true)}
