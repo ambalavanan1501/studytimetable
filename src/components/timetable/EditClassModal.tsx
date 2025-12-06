@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Loader2, Save } from 'lucide-react';
+import { X, Loader2, Save, Trash2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 interface EditClassModalProps {
@@ -151,6 +151,29 @@ export function EditClassModal({ isOpen, onClose, classData, onSuccess }: EditCl
                         >
                             {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
                             Save Changes
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={async () => {
+                                if (!confirm('Are you sure you want to delete this class?')) return;
+                                setLoading(true);
+                                try {
+                                    await supabase.from('timetable_entries').delete().eq('id', classData.id);
+                                    await supabase.from('smart_timetable_entries').delete().eq('id', classData.id);
+                                    onSuccess();
+                                    onClose();
+                                } catch (error) {
+                                    console.error('Error deleting class:', error);
+                                } finally {
+                                    setLoading(false);
+                                }
+                            }}
+                            disabled={loading}
+                            className="w-full py-3 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
+                        >
+                            <Trash2 className="h-5 w-5" />
+                            Delete Class
                         </button>
                     </form>
                 </div>

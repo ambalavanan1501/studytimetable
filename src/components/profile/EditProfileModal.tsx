@@ -51,7 +51,7 @@ export function EditProfileModal({ isOpen, onClose, currentProfile, onSuccess }:
                     branch: formData.branch,
                     semester: formData.semester,
                     cgpa: parseFloat(formData.cgpa) || 0,
-                    credits: parseInt(formData.credits) || 0,
+                    credits: parseFloat(formData.credits) || 0,
                     updated_at: new Date().toISOString(),
                 });
 
@@ -141,11 +141,12 @@ export function EditProfileModal({ isOpen, onClose, currentProfile, onSuccess }:
                             <label className="text-sm font-medium text-slate-700">Credits</label>
                             <input
                                 type="number"
+                                step="0.5"
                                 min="0"
                                 value={formData.credits}
                                 onChange={(e) => setFormData({ ...formData, credits: e.target.value })}
                                 className="w-full p-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
-                                placeholder="24"
+                                placeholder="24.5"
                             />
                         </div>
                     </div>
