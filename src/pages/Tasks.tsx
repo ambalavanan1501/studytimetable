@@ -7,8 +7,9 @@ import { SEO } from '../components/SEO';
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, TouchSensor, closestCorners, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { ArrowLeft, Plus, Trash2, GripVertical, CheckCircle2, Clock, Circle } from 'lucide-react';
-import { cn } from '../lib/utils'; // Assuming you have this utility
+import { ArrowLeft, Plus, Trash2, GripVertical, CheckCircle2, Clock, Circle, Headphones } from 'lucide-react';
+import { cn } from '../lib/utils';
+import { useFlow } from '../context/FlowContext'; // Assuming you have this utility
 
 interface Task {
     id: string;
@@ -82,6 +83,20 @@ export function Tasks() {
         if (confirm('Delete this task?')) {
             await db.deleteTask(id);
             setTasks(tasks.filter(t => t.id !== id));
+        }
+    };
+
+    const handleStatusChange = async (id: string, newStatus: ColumnId) => {
+        const task = tasks.find(t => t.id === id);
+        if (!task || task.status === newStatus) return;
+
+        const updatedTask = { ...task, status: newStatus };
+        setTasks(tasks.map(t => t.id === id ? updatedTask : t));
+        await db.saveTask(updatedTask);
+
+        if (newStatus === 'done') {
+            addXP(50, 'Task Completed');
+            addToast('Task completed! +50 XP', 'success');
         }
     };
 
@@ -178,18 +193,19 @@ export function Tasks() {
                             column={col}
                             tasks={tasks.filter(t => t.status === col.id)}
                             onDelete={handleDelete}
+                            onUpdateStatus={handleStatusChange}
                         />
                     ))}
                 </div>
                 <DragOverlay>
-                    {activeId ? <TaskCard task={tasks.find(t => t.id === activeId)!} onDelete={() => { }} isOverlay /> : null}
+                    {activeId ? <TaskCard task={tasks.find(t => t.id === activeId)!} onDelete={() => { }} onUpdateStatus={() => { }} isOverlay /> : null}
                 </DragOverlay>
             </DndContext>
         </div>
     );
 }
 
-function Column({ column, tasks, onDelete }: { column: any, tasks: Task[], onDelete: (id: string) => void }) {
+function Column({ column, tasks, onDelete, onUpdateStatus }: { column: any, tasks: Task[], onDelete: (id: string) => void, onUpdateStatus: (id: string, status: ColumnId) => void }) {
     const { setNodeRef } = useSortable({
         id: column.id,
         data: {
@@ -211,7 +227,7 @@ function Column({ column, tasks, onDelete }: { column: any, tasks: Task[], onDel
             <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
                 <div className="space-y-3">
                     {tasks.map(task => (
-                        <SortableTask key={task.id} task={task} onDelete={onDelete} />
+                        <SortableTask key={task.id} task={task} onDelete={onDelete} onUpdateStatus={onUpdateStatus} />
                     ))}
                     {tasks.length === 0 && (
                         <div className="h-24 flex items-center justify-center text-slate-300 text-xs italic">
@@ -224,7 +240,7 @@ function Column({ column, tasks, onDelete }: { column: any, tasks: Task[], onDel
     );
 }
 
-function SortableTask({ task, onDelete }: { task: Task, onDelete: (id: string) => void }) {
+function SortableTask({ task, onDelete, onUpdateStatus }: { task: Task, onDelete: (id: string) => void, onUpdateStatus: (id: string, status: ColumnId) => void }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
         id: task.id,
         data: {
@@ -240,12 +256,22 @@ function SortableTask({ task, onDelete }: { task: Task, onDelete: (id: string) =
 
     return (
         <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-            <TaskCard task={task} onDelete={onDelete} isDragging={isDragging} />
+            <TaskCard task={task} onDelete={onDelete} onUpdateStatus={onUpdateStatus} isDragging={isDragging} />
         </div>
     );
 }
 
-function TaskCard({ task, onDelete, isDragging, isOverlay }: { task: Task, onDelete: (id: string) => void, isDragging?: boolean, isOverlay?: boolean }) {
+function TaskCard({ task, onDelete, onUpdateStatus, isDragging, isOverlay }: { task: Task, onDelete: (id: string) => void, onUpdateStatus: (id: string, status: ColumnId) => void, isDragging?: boolean, isOverlay?: boolean }) {
+    const { startFocus } = useFlow();
+
+    const handleFocus = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        startFocus(25, task.text);
+        if (task.status !== 'in-progress' && task.status !== 'done') {
+            onUpdateStatus(task.id, 'in-progress');
+        }
+    };
+
     return (
         <div
             className={cn(
@@ -263,6 +289,16 @@ function TaskCard({ task, onDelete, isDragging, isOverlay }: { task: Task, onDel
                     {new Date(task.createdAt).toLocaleDateString()}
                 </span>
             </div>
+            {task.status !== 'done' && (
+                <button
+                    onClick={handleFocus}
+                    className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-300 hover:text-emerald-500 hover:bg-emerald-50 rounded-lg transition-all"
+                    title="Start Deep Work Session"
+                    onPointerDown={(e) => e.stopPropagation()}
+                >
+                    <Headphones className="h-4 w-4" />
+                </button>
+            )}
             <button
                 onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
                 className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"

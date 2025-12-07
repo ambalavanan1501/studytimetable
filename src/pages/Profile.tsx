@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Settings, ChevronRight, Loader2, Palette, GraduationCap, Target, Trash2, Info, Download, FileText, Sparkles, RefreshCw, Moon, Sun, Trophy } from 'lucide-react';
+import { LogOut, Settings, ChevronRight, Loader2, Palette, GraduationCap, Target, Trash2, Info, Download, FileText, Sparkles, RefreshCw, Moon, Sun, Trophy, Calendar } from 'lucide-react';
 import { EditProfileModal } from '../components/profile/EditProfileModal';
 import { AppSettingsModal } from '../components/profile/AppSettingsModal';
+import { ManageCoursesModal } from '../components/profile/ManageCoursesModal';
 import { cn } from '../lib/utils';
 import { fetchAIQuote, AIQuoteResponse } from '../lib/ai';
 import { SEO } from '../components/SEO';
@@ -45,6 +46,7 @@ export function Profile() {
     const [loading, setLoading] = useState(true);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+    const [isManageCoursesModalOpen, setIsManageCoursesModalOpen] = useState(false);
     const [quote, setQuote] = useState<AIQuoteResponse | null>(null);
     const [isQuoteLoading, setIsQuoteLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
@@ -465,6 +467,18 @@ export function Profile() {
                     </button>
 
                     <button
+                        onClick={() => setIsManageCoursesModalOpen(true)}
+                        className="w-full p-4 flex items-center justify-between hover:bg-white/40 rounded-2xl transition-colors group"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 group-hover:bg-purple-200 transition-colors">
+                                <Calendar className="h-4 w-4" />
+                            </div>
+                            <span className="font-medium text-slate-700">Manage Timetable</span>
+                        </div>
+                    </button>
+
+                    <button
                         onClick={handleExportJSON}
                         disabled={exporting}
                         className="w-full p-4 flex items-center justify-between hover:bg-white/40 rounded-2xl transition-colors group"
@@ -520,6 +534,11 @@ export function Profile() {
             <AppSettingsModal
                 isOpen={isSettingsModalOpen}
                 onClose={() => setIsSettingsModalOpen(false)}
+            />
+
+            <ManageCoursesModal
+                isOpen={isManageCoursesModalOpen}
+                onClose={() => setIsManageCoursesModalOpen(false)}
             />
         </div>
     );

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Plus, Calendar as CalendarIcon, Clock, MapPin, Edit2 } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Clock, MapPin } from 'lucide-react';
 import { SmartAddModal } from '../components/timetable/SmartAddModal';
-import { EditClassModal } from '../components/timetable/EditClassModal';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { cn } from '../lib/utils';
@@ -14,10 +13,6 @@ export function Timetable() {
     const [entries, setEntries] = useState<any[]>([]);
     const [attendanceStats, setAttendanceStats] = useState<Record<string, number>>({});
     const [loading, setLoading] = useState(true);
-
-    // Edit State
-    const [editingClass, setEditingClass] = useState<any>(null);
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
     // Permanently remove weekends as per user request
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
@@ -92,11 +87,6 @@ export function Timetable() {
         fetchEntries();
     }, [user, selectedDay]);
 
-    const handleEdit = (entry: any) => {
-        setEditingClass(entry);
-        setIsEditModalOpen(true);
-    };
-
     const formatTime = (time: string) => {
         const [hours, minutes] = time.split(':');
         const hour = parseInt(hours);
@@ -143,14 +133,14 @@ export function Timetable() {
                 </div>
 
                 {/* Timeline */}
-                <div className="space-y-5">
+                <div className="space-y-4 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-6 md:space-y-0">
                     {loading ? (
-                        <div className="text-center py-20">
+                        <div className="col-span-full text-center py-20">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
                             <p className="text-purple-200">Loading schedule...</p>
                         </div>
                     ) : entries.length === 0 ? (
-                        <div className="text-center py-20 flex flex-col items-center justify-center">
+                        <div className="col-span-full text-center py-20 flex flex-col items-center justify-center">
                             <div className="w-20 h-20 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center mb-6 border border-white/20">
                                 <CalendarIcon className="h-10 w-10 text-purple-200" />
                             </div>
@@ -170,59 +160,61 @@ export function Timetable() {
                                 className="relative group animate-fade-in-up opacity-0"
                                 style={{ animationDelay: `${index * 0.1}s` }}
                             >
-                                {/* Glass Card */}
-                                <div className="bg-white/90 backdrop-blur-xl p-5 rounded-[2rem] shadow-lg border border-white/50 flex flex-col gap-4">
-                                    <div className="flex flex-col gap-1 pr-8">
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            <h3 className="font-bold text-slate-900 text-xl leading-tight">{entry.subject_name}</h3>
-                                            <span className={cn(
-                                                "text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-wide shadow-sm",
-                                                entry.type === 'theory'
-                                                    ? "bg-blue-500 text-white shadow-blue-200"
-                                                    : "bg-pink-500 text-white shadow-pink-200"
-                                            )}>
-                                                {entry.type}
-                                            </span>
+                                {/* Glass Card Redesigned for Mobile */}
+                                <div className="bg-white/95 backdrop-blur-xl p-5 rounded-3xl shadow-lg border border-white/50 flex flex-col gap-3 relative overflow-hidden">
+                                    {/* Side Bar for Time Conext */}
+                                    <div className={cn(
+                                        "absolute left-0 top-0 bottom-0 w-2",
+                                        entry.type === 'theory' ? "bg-blue-500" : "bg-pink-500"
+                                    )} />
+
+                                    <div className="flex justify-between items-start pl-3">
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border border-slate-200">
+                                                    {entry.subject_code}
+                                                </span>
+                                                <span className={cn(
+                                                    "text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wide",
+                                                    entry.type === 'theory' ? "text-blue-600 bg-blue-50" : "text-pink-600 bg-pink-50"
+                                                )}>
+                                                    {entry.type}
+                                                </span>
+                                            </div>
+                                            <h3 className="font-bold text-slate-900 text-lg leading-tight line-clamp-2">{entry.subject_name}</h3>
                                         </div>
-                                        <p className="text-sm text-slate-500 font-medium uppercase tracking-wider">{entry.subject_code}</p>
+
+                                        {/* Attendance Badge */}
+                                        {attendanceStats[entry.subject_code] !== undefined && (
+                                            <div className="flex flex-col items-end">
+                                                <div className={cn(
+                                                    "px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm border",
+                                                    attendanceStats[entry.subject_code] >= 75
+                                                        ? "bg-green-50 text-green-700 border-green-200"
+                                                        : attendanceStats[entry.subject_code] >= 65
+                                                            ? "bg-yellow-50 text-yellow-700 border-yellow-200"
+                                                            : "bg-red-50 text-red-700 border-red-200"
+                                                )}>
+                                                    {attendanceStats[entry.subject_code]}%
+                                                    <span className="text-[10px] font-normal opacity-70">Att.</span>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
 
-                                    {/* Attendance Badge */}
-                                    {attendanceStats[entry.subject_code] !== undefined && (
-                                        <div className={cn(
-                                            "absolute top-5 right-16 px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1",
-                                            attendanceStats[entry.subject_code] >= 75
-                                                ? "bg-green-100 text-green-700"
-                                                : "bg-red-100 text-red-700"
-                                        )}>
-                                            {attendanceStats[entry.subject_code] < 75 && (
-                                                <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
-                                            )}
-                                            {attendanceStats[entry.subject_code]}%
-                                        </div>
-                                    )}
-
-                                    <div className="flex items-center gap-6 text-sm text-slate-600">
-                                        <div className="flex items-center gap-2">
-                                            <Clock className="h-4 w-4 text-slate-400" />
-                                            <span className="font-semibold">{formatTime(entry.start_time)} - {formatTime(entry.end_time)}</span>
+                                    <div className="flex items-center gap-4 text-sm text-slate-600 pl-3 mt-2">
+                                        <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-lg">
+                                            <Clock className="h-3.5 w-3.5 text-slate-400" />
+                                            <span className="font-bold text-slate-700">{formatTime(entry.start_time)} - {formatTime(entry.end_time)}</span>
                                         </div>
                                         {entry.room_number && (
-                                            <div className="flex items-center gap-2">
-                                                <MapPin className="h-4 w-4 text-slate-400" />
-                                                <span className="font-semibold">{entry.room_number}</span>
+                                            <div className="flex items-center gap-1.5">
+                                                <MapPin className="h-3.5 w-3.5 text-slate-400" />
+                                                <span className="font-medium text-slate-500">{entry.room_number}</span>
                                             </div>
                                         )}
                                     </div>
                                 </div>
-
-                                {/* Single Edit Button */}
-                                <button
-                                    onClick={() => handleEdit(entry)}
-                                    className="absolute top-5 right-4 p-2 text-slate-400 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-all"
-                                >
-                                    <Edit2 className="h-5 w-5" />
-                                </button>
                             </div>
                         ))
                     )}
@@ -240,13 +232,6 @@ export function Timetable() {
             <SmartAddModal
                 isOpen={isSmartAddOpen}
                 onClose={() => setIsSmartAddOpen(false)}
-                onSuccess={fetchEntries}
-            />
-
-            <EditClassModal
-                isOpen={isEditModalOpen}
-                onClose={() => setIsEditModalOpen(false)}
-                classData={editingClass}
                 onSuccess={fetchEntries}
             />
         </div>

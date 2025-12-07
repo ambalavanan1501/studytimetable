@@ -168,15 +168,15 @@ export function Simulator() {
     };
 
     return (
-        <div className="pb-24 space-y-8">
+        <div className="pb-24 space-y-4 md:space-y-8">
             <SEO
                 title="CGPA Simulator"
                 description="Predict your future grades with our interactive GPA calculator."
             />
 
-            <div className="flex flex-col gap-2">
-                <h1 className="text-3xl font-bold text-slate-800">Simulator</h1>
-                <p className="text-slate-500">Play with grades to see your future.</p>
+            <div className="flex flex-col gap-1">
+                <h1 className="text-2xl md:text-3xl font-bold text-slate-800">Simulator</h1>
+                <p className="text-slate-500 text-sm md:text-base">Play with grades to see your future.</p>
             </div>
 
             <ResultCard
@@ -188,16 +188,16 @@ export function Simulator() {
             {/* Mode Switcher */}
             {existingCgpa !== null && (
                 <div className="flex justify-center">
-                    <div className="bg-white/50 backdrop-blur-sm p-1 rounded-xl flex gap-1 border border-white/40">
+                    <div className="bg-white/50 backdrop-blur-sm p-1 rounded-xl flex gap-1 border border-white/40 shadow-sm">
                         <button
                             onClick={() => setIsCumulativeMode(false)}
-                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${!isCumulativeMode ? 'bg-white shadow-sm text-primary-600' : 'text-slate-500 hover:text-slate-700'}`}
+                            className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-bold transition-all ${!isCumulativeMode ? 'bg-white shadow-sm text-primary-600' : 'text-slate-500 hover:text-slate-700'}`}
                         >
                             Semester Only
                         </button>
                         <button
                             onClick={() => setIsCumulativeMode(true)}
-                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${isCumulativeMode ? 'bg-white shadow-sm text-primary-600' : 'text-slate-500 hover:text-slate-700'}`}
+                            className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-bold transition-all ${isCumulativeMode ? 'bg-white shadow-sm text-primary-600' : 'text-slate-500 hover:text-slate-700'}`}
                         >
                             Cumulative Effect
                         </button>
@@ -205,7 +205,7 @@ export function Simulator() {
                 </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                 {subjects.map(subject => (
                     <GradeSlider
                         key={subject.id}
@@ -219,17 +219,17 @@ export function Simulator() {
                 ))}
             </div>
 
-            <div className="flex justify-center gap-4">
+            <div className="flex justify-center gap-4 pt-4">
                 <button
                     onClick={openAddModal}
-                    className="flex items-center gap-2 bg-primary-600 text-white px-6 py-3 rounded-full font-bold shadow-lg shadow-primary-500/30 hover:bg-primary-700 transition-all active:scale-95"
+                    className="flex items-center gap-2 bg-primary-600 text-white px-6 py-3 rounded-full font-bold shadow-lg shadow-primary-500/30 hover:bg-primary-700 transition-all active:scale-95 text-sm md:text-base"
                 >
                     <Plus className="h-5 w-5" />
                     Add Subject
                 </button>
                 <button
                     onClick={handleReset}
-                    className="flex items-center gap-2 bg-white text-slate-600 px-6 py-3 rounded-full font-bold shadow-sm hover:bg-slate-50 transition-all"
+                    className="flex items-center gap-2 bg-white text-slate-600 px-6 py-3 rounded-full font-bold shadow-sm hover:bg-slate-50 transition-all text-sm md:text-base"
                 >
                     <RotateCcw className="h-5 w-5" />
                     Reset

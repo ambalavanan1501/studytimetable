@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Calendar, User, CalendarCheck, LogOut, Calculator, BarChart2 } from 'lucide-react';
+import { Home, Calendar, User, CalendarCheck, LogOut, Calculator } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useAuth } from '../context/AuthContext';
@@ -50,7 +50,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
                         <NavItem to="/" icon={Home} label="Dashboard" />
                         <NavItem to="/schedule" icon={Calendar} label="Schedule" />
                         <NavItem to="/simulator" icon={Calculator} label="Simulator" />
-                        <NavItem to="/analytics" icon={BarChart2} label="Analytics" />
                         <NavItem to="/attendance" icon={CalendarCheck} label="Attendance" />
                         <NavItem to="/profile" icon={User} label="Profile" />
                     </nav>
@@ -89,9 +88,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
                         </Link>
                         <Link to="/simulator" className={cn("p-2 rounded-xl transition-all duration-300", isActive('/simulator') ? "bg-primary-100 text-primary-600 scale-110" : "text-slate-400 hover:text-primary-400")}>
                             <Calculator className="h-6 w-6" />
-                        </Link>
-                        <Link to="/analytics" className={cn("p-2 rounded-xl transition-all duration-300", isActive('/analytics') ? "bg-primary-100 text-primary-600 scale-110" : "text-slate-400 hover:text-primary-400")}>
-                            <BarChart2 className="h-6 w-6" />
                         </Link>
                         <Link to="/attendance" className={cn("p-2 rounded-xl transition-all duration-300", isActive('/attendance') ? "bg-primary-100 text-primary-600 scale-110" : "text-slate-400 hover:text-primary-400")}>
                             <CalendarCheck className="h-6 w-6" />
