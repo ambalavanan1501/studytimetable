@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Mail, Phone, GraduationCap, Github, Instagram, Globe } from 'lucide-react';
+import { SEO } from '../components/SEO';
 
 
 export function Developer() {
@@ -7,6 +8,10 @@ export function Developer() {
 
     return (
         <div className="min-h-screen bg-slate-50 p-6 pb-24">
+            <SEO
+                title="Developer"
+                description="Information about the developer of this application."
+            />
             {/* Header */}
             <div className="flex items-center gap-4 mb-8">
                 <button

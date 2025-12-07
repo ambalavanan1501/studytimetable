@@ -8,6 +8,7 @@ import { AppSettingsModal } from '../components/profile/AppSettingsModal';
 import { cn } from '../lib/utils';
 import { fetchAIQuote, AIQuoteResponse } from '../lib/ai';
 import { Sparkles, RefreshCw } from 'lucide-react';
+import { SEO } from '../components/SEO';
 
 interface ProfileData {
     full_name: string | null;
@@ -198,6 +199,10 @@ export function Profile() {
 
     return (
         <div className="p-6 space-y-8 pb-32">
+            <SEO
+                title="Profile"
+                description="Manage your profile settings and goals."
+            />
             <h1 className="text-2xl font-bold text-slate-800 mt-4">Profile</h1>
 
             {/* User Card */}

@@ -5,6 +5,7 @@ import { EditClassModal } from '../components/timetable/EditClassModal';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { cn } from '../lib/utils';
+import { SEO } from '../components/SEO';
 
 export function Timetable() {
     const { user } = useAuth();
@@ -106,6 +107,10 @@ export function Timetable() {
 
     return (
         <div className="min-h-screen pb-24 relative overflow-hidden">
+            <SEO
+                title="Schedule"
+                description="Manage your class timetable and track attendance."
+            />
             {/* Dark Purple Gradient Background */}
             <div className="fixed inset-0 bg-gradient-to-br from-[#2e1065] via-[#4c1d95] to-[#1e1b4b] z-0" />
 

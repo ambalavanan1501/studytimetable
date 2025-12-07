@@ -6,6 +6,7 @@ import { StickyNoteWidget } from '../components/dashboard/StickyNoteWidget';
 import { CountdownWidget } from '../components/dashboard/CountdownWidget';
 import { MiniTaskWidget } from '../components/dashboard/MiniTaskWidget';
 import { cn } from '../lib/utils';
+import { SEO } from '../components/SEO';
 
 const QUOTES = [
     { text: "The capacity to learn is a gift; the ability to learn is a skill; the willingness to learn is a choice.", author: "Brian Herbert" },
@@ -113,6 +114,10 @@ export function Dashboard() {
 
     return (
         <div className="p-6 space-y-8 pb-24">
+            <SEO
+                title="Dashboard"
+                description="View your daily schedule, attendance stats, and upcoming classes."
+            />
             {/* Welcome Header & Clock */}
             <div className="mt-4 flex justify-between items-end">
                 <div className="flex items-center gap-4">
