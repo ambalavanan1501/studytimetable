@@ -1,7 +1,14 @@
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import { supabase } from './supabase';
 import { db } from './db';
+
+// Lazy load jsPDF and autoTable only when needed
+async function loadPDFLibraries() {
+    const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+        import('jspdf'),
+        import('jspdf-autotable')
+    ]);
+    return { jsPDF, autoTable };
+}
 
 // --- JSON Backup ---
 
@@ -63,6 +70,9 @@ export async function exportDataAsJSON(userId: string) {
 
 export async function generatePDFReport(userId: string) {
     try {
+        // Lazy load PDF libraries
+        const { jsPDF, autoTable } = await loadPDFLibraries();
+
         const doc = new jsPDF();
         const margin = 20;
         let yPos = 20;
