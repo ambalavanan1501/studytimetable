@@ -1,17 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowUpRight, CheckCircle2, Circle, ListTodo } from 'lucide-react';
+import { ArrowUpRight, Circle, ListTodo } from 'lucide-react';
 import { db } from '../../lib/db';
 
-interface Task {
-    id: string;
-    text: string;
-    completed: boolean;
-}
+
 
 export function MiniTaskWidget() {
     const navigate = useNavigate();
-    const [tasks, setTasks] = useState<Task[]>([]);
+    const [tasks, setTasks] = useState<any[]>([]); // using any or updated interface
 
     useEffect(() => {
         loadTasks();
@@ -19,24 +15,27 @@ export function MiniTaskWidget() {
 
     const loadTasks = async () => {
         const all = await db.getAllTasks();
-        // Show top 3 incomplete tasks, or recent completed if all done
-        const incomplete = all.filter(t => !t.completed).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-        const completed = all.filter(t => t.completed).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        // Filter: Show top 3 'todo' or 'in-progress' tasks
+        // Adapt legacy data if needed
+        const active = all.filter((t: any) => {
+            const status = t.status || (t.completed ? 'done' : 'todo');
+            return status !== 'done';
+        }).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
-        setTasks([...incomplete, ...completed].slice(0, 3));
+        setTasks(active.slice(0, 3));
     };
 
     const handleToggle = async (id: string) => {
         const task = tasks.find(t => t.id === id);
         if (task) {
-            // We need to fetch the full object to save it back correctly if we had more fields, 
-            // but for now this is fine or we can re-fetch.
-            // Better: get from DB, update, save.
-            const fullTask = await db.getAllTasks().then(ts => ts.find(t => t.id === id));
+            const fullTask: any = await db.getAllTasks().then(ts => ts.find(t => t.id === id));
             if (fullTask) {
-                await db.saveTask({ ...fullTask, completed: !task.completed });
-                // Optimistic update
-                setTasks(tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
+                // Move to done
+                const updated = { ...fullTask, status: 'done' };
+                await db.saveTask(updated);
+
+                // Optimistic update - remove from list
+                setTasks(tasks.filter(t => t.id !== id));
             }
         }
     };
@@ -64,13 +63,9 @@ export function MiniTaskWidget() {
                                 onClick={() => handleToggle(task.id)}
                                 className="text-slate-400 hover:text-emerald-500 transition-colors"
                             >
-                                {task.completed ? (
-                                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                                ) : (
-                                    <Circle className="h-4 w-4" />
-                                )}
+                                <Circle className="h-4 w-4" />
                             </button>
-                            <span className={`text-sm truncate ${task.completed ? 'text-slate-400 line-through' : 'text-slate-600'}`}>
+                            <span className="text-sm text-slate-600 truncate">
                                 {task.text}
                             </span>
                         </div>

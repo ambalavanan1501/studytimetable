@@ -4,20 +4,89 @@
 
 @layer base {
   :root {
-    /* Default Theme (Purple) */
+    /* Default CSS Variables for Light Mode */
+    --background: 210 40% 98%;
+    /* Slate-50 equivalent */
+    --foreground: 222 47% 11%;
+    /* Slate-900 equivalent */
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 256 60% 58%;
+    /* Purple-500 matches default theme */
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222 47% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222 47% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 256 60% 58%;
+
+    --radius: 0.5rem;
+
+    /* Theme Specific Colors (Light Mode Defaults) */
     --primary-50: 250 60% 98%;
     --primary-100: 251 58% 94%;
     --primary-200: 250 56% 90%;
     --primary-300: 250 54% 82%;
     --primary-400: 252 56% 70%;
     --primary-500: 256 60% 58%;
-    /* Main Accent */
     --primary-600: 260 60% 50%;
     --primary-700: 262 62% 42%;
     --primary-800: 262 60% 34%;
     --primary-900: 262 56% 28%;
     --primary-950: 264 64% 16%;
   }
+
+  /* Dark Mode Overrides */
+  .dark {
+    --background: 222 47% 11%;
+    /* Slate-950 */
+    --foreground: 210 40% 98%;
+    /* Slate-50 */
+
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 256 60% 58%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 256 60% 58%;
+  }
+
+  /* Dynamic Theme Overrides (Applied via data-theme attribute) */
+  /* Purple is default, already defined above */
 
   [data-theme='blue'] {
     --primary-50: 210 100% 98%;
@@ -26,12 +95,12 @@
     --primary-300: 210 100% 80%;
     --primary-400: 210 100% 68%;
     --primary-500: 217 91% 60%;
-    /* Blue Main */
     --primary-600: 221 83% 53%;
     --primary-700: 224 76% 48%;
     --primary-800: 226 71% 40%;
     --primary-900: 224 64% 33%;
     --primary-950: 226 57% 21%;
+    --ring: 217 91% 60%;
   }
 
   [data-theme='green'] {
@@ -41,12 +110,12 @@
     --primary-300: 142 72% 75%;
     --primary-400: 145 63% 60%;
     --primary-500: 142 71% 45%;
-    /* Green Main */
     --primary-600: 142 76% 36%;
     --primary-700: 142 72% 29%;
     --primary-800: 143 64% 24%;
     --primary-900: 145 61% 20%;
     --primary-950: 144 61% 11%;
+    --ring: 142 71% 45%;
   }
 
   [data-theme='orange'] {
@@ -56,12 +125,12 @@
     --primary-300: 34 100% 80%;
     --primary-400: 32 100% 68%;
     --primary-500: 27 96% 61%;
-    /* Orange Main */
     --primary-600: 25 95% 53%;
     --primary-700: 22 89% 45%;
     --primary-800: 18 80% 38%;
     --primary-900: 15 76% 32%;
     --primary-950: 13 80% 17%;
+    --ring: 27 96% 61%;
   }
 
   [data-theme='pink'] {
@@ -71,12 +140,12 @@
     --primary-300: 329 77% 82%;
     --primary-400: 332 79% 70%;
     --primary-500: 336 80% 58%;
-    /* Pink Main */
     --primary-600: 339 76% 49%;
     --primary-700: 341 78% 40%;
     --primary-800: 343 78% 34%;
     --primary-900: 344 75% 29%;
     --primary-950: 346 80% 15%;
+    --ring: 336 80% 58%;
   }
 }
 
@@ -86,7 +155,7 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground transition-colors duration-300;
   }
 }
 
@@ -121,36 +190,34 @@
   animation-delay: 4s;
 }
 
-/* Glass Utilities */
+/* Glass Utilities - Updated for Dark Mode */
 .glass {
-  @apply bg-white/10 backdrop-blur-lg border border-white/20 shadow-xl;
+  @apply bg-white/10 dark:bg-black/20 backdrop-blur-lg border border-white/20 dark:border-white/10 shadow-xl transition-all duration-300;
 }
 
 .glass-card {
-  @apply bg-white/70 backdrop-blur-md border border-white/40 shadow-lg;
+  @apply bg-white/70 dark:bg-black/40 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-lg transition-all duration-300;
 }
 
 .glass-nav {
-  @apply bg-white/80 backdrop-blur-xl border-t border-white/40 shadow-2xl;
+  @apply bg-white/80 dark:bg-black/80 backdrop-blur-xl border-t border-white/40 dark:border-white/10 shadow-2xl transition-all duration-300;
 }
 
-/* Hide scrollbar for Chrome, Safari and Opera */
+.glass-card-premium {
+  @apply bg-white/60 dark:bg-black/30 backdrop-blur-xl border border-white/40 dark:border-white/10 shadow-xl transition-all duration-300;
+}
+
+/* Scrollbar hiding */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
 
-/* Hide scrollbar for IE, Edge and Firefox */
 .no-scrollbar {
   -ms-overflow-style: none;
-  /* IE and Edge */
   scrollbar-width: none;
-  /* Firefox */
 }
 
-.glass-card-premium {
-  @apply bg-white/60 backdrop-blur-xl border border-white/40 shadow-xl;
-}
-
+/* Animations */
 @keyframes fade-in-up {
   0% {
     opacity: 0;

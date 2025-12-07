@@ -5,7 +5,7 @@ import { db } from '../../lib/db';
 
 export function StickyNoteWidget() {
     const navigate = useNavigate();
-    const [note, setNote] = useState<{ id: string; content: string } | null>(null);
+    const [note, setNote] = useState<{ id: string; content: string; title?: string } | null>(null);
 
     useEffect(() => {
         loadLatestNote();
@@ -21,6 +21,7 @@ export function StickyNoteWidget() {
             // Create a default "Quick Note" if none exists
             const newNote = {
                 id: 'quick-note',
+                title: 'Quick Note',
                 content: '',
                 updatedAt: new Date()
             };
@@ -31,7 +32,12 @@ export function StickyNoteWidget() {
 
     const handleUpdate = async (content: string) => {
         if (note) {
-            const updated = { ...note, content, updatedAt: new Date() };
+            const updated = {
+                ...note,
+                title: note.title || 'Quick Note',
+                content,
+                updatedAt: new Date()
+            };
             setNote(updated);
             // Debounce could be added here
             await db.saveNote(updated);
@@ -46,7 +52,7 @@ export function StickyNoteWidget() {
                     Quick Note
                 </h3>
                 <button
-                    onClick={() => navigate('/notes')}
+                    onClick={() => navigate('/notes')} // This route might need to be defined or removed if not ready
                     className="p-1.5 rounded-full hover:bg-yellow-100 text-slate-400 hover:text-yellow-600 transition-colors"
                 >
                     <ArrowUpRight className="h-4 w-4" />

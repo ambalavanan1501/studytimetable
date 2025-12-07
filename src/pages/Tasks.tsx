@@ -1,23 +1,44 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, CheckCircle2, Circle, Upload, FileJson, FileText } from 'lucide-react';
 import { db } from '../lib/db';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-
+import { useGamification } from '../context/GamificationContext';
+import { useToast } from '../context/ToastContext';
+import { SEO } from '../components/SEO';
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, TouchSensor, closestCorners, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { ArrowLeft, Plus, Trash2, GripVertical, CheckCircle2, Clock, Circle } from 'lucide-react';
+import { cn } from '../lib/utils'; // Assuming you have this utility
 
 interface Task {
     id: string;
     text: string;
-    completed: boolean;
+    status: 'todo' | 'in-progress' | 'done';
     createdAt: Date;
+    // index field isn't in DB yet, we'll sort by createdAt for now or in-memory
 }
+
+type ColumnId = 'todo' | 'in-progress' | 'done';
+
+const COLUMNS: { id: ColumnId; title: string; color: string; icon: any }[] = [
+    { id: 'todo', title: 'To Do', color: 'bg-slate-100 border-slate-200', icon: Circle },
+    { id: 'in-progress', title: 'In Progress', color: 'bg-blue-50 border-blue-100', icon: Clock },
+    { id: 'done', title: 'Completed', color: 'bg-emerald-50 border-emerald-100', icon: CheckCircle2 },
+];
 
 export function Tasks() {
     const navigate = useNavigate();
+    const { addXP } = useGamification();
+    const { addToast } = useToast();
+
     const [tasks, setTasks] = useState<Task[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [activeId, setActiveId] = useState<string | null>(null);
     const [newTask, setNewTask] = useState('');
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(TouchSensor)
+    );
 
     useEffect(() => {
         loadTasks();
@@ -26,108 +47,93 @@ export function Tasks() {
     const loadTasks = async () => {
         try {
             const data = await db.getAllTasks();
-            setTasks(data.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()));
+            // Data Migration for legacy 'completed' boolean
+            const parsed = data.map((t: any) => ({
+                ...t,
+                status: t.status ? t.status : (t.completed ? 'done' : 'todo')
+            }));
+            // Sort by date descending
+            setTasks(parsed.sort((a: Task, b: Task) => b.createdAt.getTime() - a.createdAt.getTime()));
         } catch (error) {
             console.error("Failed to load tasks", error);
         } finally {
-            setLoading(false);
+            // 
         }
     };
 
-    const handleAdd = async (e: React.FormEvent) => {
+    const handleAddTask = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newTask.trim()) return;
 
-        const item = {
+        const task: Task = {
             id: crypto.randomUUID(),
             text: newTask.trim(),
-            completed: false,
+            status: 'todo',
             createdAt: new Date()
         };
 
-        await db.saveTask(item);
-        setTasks([item, ...tasks]);
+        await db.saveTask(task);
+        setTasks([task, ...tasks]);
         setNewTask('');
-    };
-
-    const handleToggle = async (id: string) => {
-        const task = tasks.find(t => t.id === id);
-        if (task) {
-            const updated = { ...task, completed: !task.completed };
-            await db.saveTask(updated);
-            setTasks(tasks.map(t => t.id === id ? updated : t));
-        }
+        addXP(10, 'Task Created');
     };
 
     const handleDelete = async (id: string) => {
-        await db.deleteTask(id);
-        setTasks(tasks.filter(t => t.id !== id));
+        if (confirm('Delete this task?')) {
+            await db.deleteTask(id);
+            setTasks(tasks.filter(t => t.id !== id));
+        }
     };
 
-    const exportJSON = () => {
-        const dataStr = JSON.stringify(tasks, null, 2);
-        const blob = new Blob([dataStr], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = "tasks.json";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    const handleDragStart = (event: DragStartEvent) => {
+        setActiveId(event.active.id as string);
     };
 
-    const exportPDF = () => {
-        const doc = new jsPDF();
-        doc.text("Tasks", 14, 15);
+    const handleDragEnd = async (event: DragEndEvent) => {
+        const { active, over } = event;
+        setActiveId(null);
 
-        const tableData = tasks.map(task => [
-            task.text,
-            task.completed ? 'Completed' : 'Pending',
-            task.createdAt.toLocaleDateString()
-        ]);
+        if (!over) return;
 
-        autoTable(doc, {
-            head: [['Task', 'Status', 'Created At']],
-            body: tableData,
-            startY: 20,
-        });
+        const activeTask = tasks.find(t => t.id === active.id);
+        if (!activeTask) return;
 
-        doc.save("tasks.pdf");
-    };
+        // If dropped over a column container or a task in that column
+        let newStatus: ColumnId | null = null;
 
-    const importJSON = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            try {
-                const imported = JSON.parse(e.target?.result as string);
-                if (Array.isArray(imported)) {
-                    for (const item of imported) {
-                        const parsed = {
-                            ...item,
-                            createdAt: new Date(item.createdAt)
-                        };
-                        await db.saveTask(parsed);
-                    }
-                    loadTasks();
-                    alert('Tasks imported successfully!');
-                }
-            } catch (error) {
-                console.error("Import failed", error);
-                alert('Failed to import. Invalid format.');
+        // Check if over is a container column
+        if (COLUMNS.some(c => c.id === over.id)) {
+            newStatus = over.id as ColumnId;
+        } else {
+            // Check if over is a task
+            const overTask = tasks.find(t => t.id === over.id);
+            if (overTask) {
+                newStatus = overTask.status;
             }
-        };
-        reader.readAsText(file);
-    };
+        }
 
-    const activeTasks = tasks.filter(t => !t.completed);
-    const completedTasks = tasks.filter(t => t.completed);
+        if (newStatus && newStatus !== activeTask.status) {
+            const updatedTask = { ...activeTask, status: newStatus };
+
+            // Optimistic Update
+            setTasks(tasks.map(t => t.id === active.id ? updatedTask : t));
+
+            // DB Update
+            await db.saveTask(updatedTask);
+
+            // Gamification Trigger
+            if (newStatus === 'done' && activeTask.status !== 'done') {
+                addXP(50, 'Task Completed');
+                addToast('Task moved to Completed! +50 XP', 'success');
+            }
+        }
+    };
 
     return (
-        <div className="min-h-screen bg-slate-50 p-6 pb-24">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div className="min-h-screen p-6 pb-24 space-y-6">
+            <SEO title="Kanban Board" description="Manage your tasks efficiently." />
+
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                     <button
                         onClick={() => navigate(-1)}
@@ -135,111 +141,135 @@ export function Tasks() {
                     >
                         <ArrowLeft className="h-6 w-6 text-slate-600" />
                     </button>
-                    <h1 className="text-2xl font-bold text-slate-800">Tasks</h1>
+                    <div>
+                        <h1 className="text-2xl font-bold text-slate-800">Task Board</h1>
+                        <p className="text-slate-500 text-xs">Drag and drop to manage workflow</p>
+                    </div>
                 </div>
 
-                <div className="flex items-center gap-2 flex-wrap">
-                    <button
-                        onClick={exportJSON}
-                        className="flex items-center gap-2 bg-white text-slate-600 px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors shadow-sm text-sm font-medium"
-                        title="Export JSON"
-                    >
-                        <FileJson className="h-4 w-4" />
-                        <span className="hidden sm:inline">JSON</span>
-                    </button>
-                    <button
-                        onClick={exportPDF}
-                        className="flex items-center gap-2 bg-white text-slate-600 px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors shadow-sm text-sm font-medium"
-                        title="Export PDF"
-                    >
-                        <FileText className="h-4 w-4" />
-                        <span className="hidden sm:inline">PDF</span>
-                    </button>
-                    <label className="flex items-center gap-2 bg-white text-slate-600 px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors shadow-sm text-sm font-medium cursor-pointer">
-                        <Upload className="h-4 w-4" />
-                        <span className="hidden sm:inline">Import</span>
-                        <input type="file" accept=".json" onChange={importJSON} className="hidden" />
-                    </label>
-                </div>
-            </div>
-
-            <div className="max-w-2xl mx-auto space-y-8">
-                {/* Add Task Input */}
-                <form onSubmit={handleAdd} className="relative">
+                <form onSubmit={handleAddTask} className="flex gap-2">
                     <input
                         type="text"
                         value={newTask}
                         onChange={e => setNewTask(e.target.value)}
-                        placeholder="Add a new task..."
-                        className="w-full pl-6 pr-14 py-4 rounded-2xl border-none shadow-sm focus:ring-2 focus:ring-primary-500 text-lg"
+                        placeholder="Add new task..."
+                        className="glass-input px-4 py-2 rounded-xl focus:ring-2 focus:ring-primary-500 w-full md:w-64"
                     />
                     <button
                         type="submit"
                         disabled={!newTask.trim()}
-                        className="absolute right-2 top-2 bottom-2 aspect-square bg-primary-600 text-white rounded-xl flex items-center justify-center hover:bg-primary-700 transition-colors disabled:opacity-50"
+                        className="bg-primary-600 text-white p-2 rounded-xl hover:bg-primary-700 transition-colors disabled:opacity-50"
                     >
                         <Plus className="h-6 w-6" />
                     </button>
                 </form>
-
-                {loading ? (
-                    <div className="text-center py-10 text-slate-500">Loading tasks...</div>
-                ) : tasks.length === 0 ? (
-                    <div className="text-center py-20 text-slate-400">
-                        <p>No tasks yet. Stay organized by adding one!</p>
-                    </div>
-                ) : (
-                    <div className="space-y-6">
-                        {/* Active Tasks */}
-                        {activeTasks.length > 0 && (
-                            <div className="space-y-3">
-                                <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider ml-2">To Do</h2>
-                                {activeTasks.map(task => (
-                                    <div key={task.id} className="glass-card p-4 rounded-2xl flex items-center gap-4 group">
-                                        <button
-                                            onClick={() => handleToggle(task.id)}
-                                            className="text-slate-400 hover:text-primary-600 transition-colors"
-                                        >
-                                            <Circle className="h-6 w-6" />
-                                        </button>
-                                        <span className="flex-1 text-slate-700 font-medium">{task.text}</span>
-                                        <button
-                                            onClick={() => handleDelete(task.id)}
-                                            className="opacity-0 group-hover:opacity-100 p-2 text-slate-300 hover:text-red-500 transition-all"
-                                        >
-                                            <Trash2 className="h-5 w-5" />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        {/* Completed Tasks */}
-                        {completedTasks.length > 0 && (
-                            <div className="space-y-3">
-                                <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider ml-2">Completed</h2>
-                                {completedTasks.map(task => (
-                                    <div key={task.id} className="bg-slate-100/50 p-4 rounded-2xl flex items-center gap-4 opacity-75">
-                                        <button
-                                            onClick={() => handleToggle(task.id)}
-                                            className="text-emerald-500"
-                                        >
-                                            <CheckCircle2 className="h-6 w-6" />
-                                        </button>
-                                        <span className="flex-1 text-slate-500 line-through">{task.text}</span>
-                                        <button
-                                            onClick={() => handleDelete(task.id)}
-                                            className="p-2 text-slate-300 hover:text-red-500 transition-colors"
-                                        >
-                                            <Trash2 className="h-5 w-5" />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                )}
             </div>
+
+            <DndContext
+                sensors={sensors}
+                collisionDetection={closestCorners}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+            >
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full items-start">
+                    {COLUMNS.map(col => (
+                        <Column
+                            key={col.id}
+                            column={col}
+                            tasks={tasks.filter(t => t.status === col.id)}
+                            onDelete={handleDelete}
+                        />
+                    ))}
+                </div>
+                <DragOverlay>
+                    {activeId ? <TaskCard task={tasks.find(t => t.id === activeId)!} onDelete={() => { }} isOverlay /> : null}
+                </DragOverlay>
+            </DndContext>
+        </div>
+    );
+}
+
+function Column({ column, tasks, onDelete }: { column: any, tasks: Task[], onDelete: (id: string) => void }) {
+    const { setNodeRef } = useSortable({
+        id: column.id,
+        data: {
+            type: 'Column',
+            column,
+        },
+    });
+
+    return (
+        <div
+            ref={setNodeRef}
+            className={cn("bg-slate-50/50 rounded-2xl p-4 min-h-[500px] border-2 border-dashed border-slate-200 transition-colors", column.color)}
+        >
+            <div className="flex items-center gap-2 mb-4 text-slate-500 font-bold uppercase text-xs tracking-wider">
+                <column.icon className="h-4 w-4" />
+                {column.title} <span className="bg-white/50 px-2 py-0.5 rounded-full text-[10px] ml-auto">{tasks.length}</span>
+            </div>
+
+            <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
+                <div className="space-y-3">
+                    {tasks.map(task => (
+                        <SortableTask key={task.id} task={task} onDelete={onDelete} />
+                    ))}
+                    {tasks.length === 0 && (
+                        <div className="h-24 flex items-center justify-center text-slate-300 text-xs italic">
+                            Empty
+                        </div>
+                    )}
+                </div>
+            </SortableContext>
+        </div>
+    );
+}
+
+function SortableTask({ task, onDelete }: { task: Task, onDelete: (id: string) => void }) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+        id: task.id,
+        data: {
+            type: 'Task',
+            task,
+        },
+    });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+    };
+
+    return (
+        <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+            <TaskCard task={task} onDelete={onDelete} isDragging={isDragging} />
+        </div>
+    );
+}
+
+function TaskCard({ task, onDelete, isDragging, isOverlay }: { task: Task, onDelete: (id: string) => void, isDragging?: boolean, isOverlay?: boolean }) {
+    return (
+        <div
+            className={cn(
+                "glass-card p-4 rounded-xl flex items-start gap-3 group bg-white shadow-sm border border-slate-100",
+                isDragging && "opacity-30",
+                isOverlay && "rotate-2 scale-105 shadow-xl cursor-grabbing ring-2 ring-primary-500 ring-offset-2 z-50",
+            )}
+        >
+            <button className="mt-1 text-slate-300 cursor-grab active:cursor-grabbing">
+                <GripVertical className="h-4 w-4" />
+            </button>
+            <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-700 break-words leading-relaxed">{task.text}</p>
+                <span className="text-[10px] text-slate-400 mt-2 block">
+                    {new Date(task.createdAt).toLocaleDateString()}
+                </span>
+            </div>
+            <button
+                onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
+                className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                onPointerDown={(e) => e.stopPropagation()}
+            >
+                <Trash2 className="h-4 w-4" />
+            </button>
         </div>
     );
 }

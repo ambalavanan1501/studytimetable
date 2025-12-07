@@ -7,6 +7,7 @@ import autoTable from 'jspdf-autotable';
 
 interface Note {
     id: string;
+    title: string;
     content: string;
     updatedAt: Date;
 }
@@ -35,6 +36,7 @@ export function StickyNotes() {
     const handleAddNote = async () => {
         const newNote = {
             id: crypto.randomUUID(),
+            title: 'Untitled Note',
             content: '',
             updatedAt: new Date()
         };

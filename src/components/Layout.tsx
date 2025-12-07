@@ -1,8 +1,9 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Calendar, User, CalendarCheck, LogOut } from 'lucide-react';
+import { Home, Calendar, User, CalendarCheck, LogOut, Calculator, BarChart2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useAuth } from '../context/AuthContext';
+import { PageTransition } from './PageTransition';
 
 export function Layout({ children }: { children: React.ReactNode }) {
     const location = useLocation();
@@ -27,7 +28,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     );
 
     return (
-        <div className="min-h-screen bg-slate-50 relative overflow-hidden font-sans">
+        <div className="min-h-screen bg-background relative overflow-hidden font-sans">
             {/* Animated Background Blobs */}
             <div className="fixed inset-0 pointer-events-none overflow-hidden">
                 <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary-300/30 rounded-full blur-3xl animate-blob mix-blend-multiply filter"></div>
@@ -42,19 +43,21 @@ export function Layout({ children }: { children: React.ReactNode }) {
                         <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center text-white font-bold">
                             A
                         </div>
-                        <span className="text-xl font-bold text-slate-800">Attendance</span>
+                        <span className="text-xl font-bold text-foreground">Attendance</span>
                     </div>
 
                     <nav className="space-y-2 flex-1">
                         <NavItem to="/" icon={Home} label="Dashboard" />
                         <NavItem to="/schedule" icon={Calendar} label="Schedule" />
+                        <NavItem to="/simulator" icon={Calculator} label="Simulator" />
+                        <NavItem to="/analytics" icon={BarChart2} label="Analytics" />
                         <NavItem to="/attendance" icon={CalendarCheck} label="Attendance" />
                         <NavItem to="/profile" icon={User} label="Profile" />
                     </nav>
 
                     <button
                         onClick={() => signOut()}
-                        className="flex items-center gap-3 p-3 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
+                        className="flex items-center gap-3 p-3 rounded-xl text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-all"
                     >
                         <LogOut className="h-6 w-6" />
                         <span className="font-bold text-sm">Sign Out</span>
@@ -68,7 +71,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 isDesktop ? "ml-64 p-8" : "pb-24 max-w-md mx-auto"
             )}>
                 <div className={cn("mx-auto", isDesktop ? "max-w-5xl" : "")}>
-                    {children}
+                    <PageTransition>
+                        {children}
+                    </PageTransition>
                 </div>
             </div>
 
@@ -81,6 +86,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
                         </Link>
                         <Link to="/schedule" className={cn("p-2 rounded-xl transition-all duration-300", isActive('/schedule') ? "bg-primary-100 text-primary-600 scale-110" : "text-slate-400 hover:text-primary-400")}>
                             <Calendar className="h-6 w-6" />
+                        </Link>
+                        <Link to="/simulator" className={cn("p-2 rounded-xl transition-all duration-300", isActive('/simulator') ? "bg-primary-100 text-primary-600 scale-110" : "text-slate-400 hover:text-primary-400")}>
+                            <Calculator className="h-6 w-6" />
+                        </Link>
+                        <Link to="/analytics" className={cn("p-2 rounded-xl transition-all duration-300", isActive('/analytics') ? "bg-primary-100 text-primary-600 scale-110" : "text-slate-400 hover:text-primary-400")}>
+                            <BarChart2 className="h-6 w-6" />
                         </Link>
                         <Link to="/attendance" className={cn("p-2 rounded-xl transition-all duration-300", isActive('/attendance') ? "bg-primary-100 text-primary-600 scale-110" : "text-slate-400 hover:text-primary-400")}>
                             <CalendarCheck className="h-6 w-6" />

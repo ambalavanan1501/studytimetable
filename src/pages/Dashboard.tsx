@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Clock, MapPin, Quote, Radio, BarChart3, ListChecks } from 'lucide-react';
+import { Clock, MapPin, Quote, Radio, BarChart3, ListChecks, BookOpen } from 'lucide-react';
 import { StickyNoteWidget } from '../components/dashboard/StickyNoteWidget';
 import { CountdownWidget } from '../components/dashboard/CountdownWidget';
 import { MiniTaskWidget } from '../components/dashboard/MiniTaskWidget';
 import { cn } from '../lib/utils';
 import { SEO } from '../components/SEO';
+import { SubjectVault } from '../components/vault/SubjectVault';
 
 const QUOTES = [
     { text: "The capacity to learn is a gift; the ability to learn is a skill; the willingness to learn is a choice.", author: "Brian Herbert" },
@@ -30,6 +31,15 @@ export function Dashboard() {
     const [cgpa, setCgpa] = useState(0);
     const [credits, setCredits] = useState(0);
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+    // Vault State
+    const [isVaultOpen, setIsVaultOpen] = useState(false);
+    const [vaultSubject, setVaultSubject] = useState<{ name: string, code: string } | null>(null);
+
+    const openVault = (subjectName: string, subjectCode: string) => {
+        setVaultSubject({ name: subjectName, code: subjectCode });
+        setIsVaultOpen(true);
+    };
 
     useEffect(() => {
         // Live Clock
@@ -81,8 +91,6 @@ export function Dashboard() {
             const all = [...(basic || []), ...(smart || [])];
             all.sort((a, b) => a.start_time.localeCompare(b.start_time));
 
-
-
             // Find next and ongoing class based on current time
             const now = new Date();
             const timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
@@ -113,7 +121,7 @@ export function Dashboard() {
     }, [user]);
 
     return (
-        <div className="p-6 space-y-8 pb-24">
+        <div className="p-6 space-y-8 pb-24 staggered-fade-in">
             <SEO
                 title="Dashboard"
                 description="View your daily schedule, attendance stats, and upcoming classes."
@@ -172,7 +180,18 @@ export function Dashboard() {
                                 Up Next
                             </span>
                         )}
-                        <Clock className={cn("h-5 w-5", ongoingClass ? "text-red-400" : "text-primary-400")} />
+                        <div className="flex gap-2">
+                            {(ongoingClass || nextClass) && (
+                                <button
+                                    onClick={() => openVault((ongoingClass || nextClass).subject_name, (ongoingClass || nextClass).subject_code)}
+                                    className="bg-white/50 hover:bg-white text-primary-600 p-2 rounded-full transition-colors"
+                                    title="Open Notes"
+                                >
+                                    <BookOpen className="h-4 w-4" />
+                                </button>
+                            )}
+                            <Clock className={cn("h-5 w-5", ongoingClass ? "text-red-400" : "text-primary-400")} />
+                        </div>
                     </div>
 
                     {ongoingClass ? (
@@ -241,7 +260,7 @@ export function Dashboard() {
                     <div className="text-xs text-slate-500 font-medium">Attendance</div>
                 </div>
 
-                <div className="glass-card p-5 rounded-3xl flex flex-col items-center justify-center text-center hover:bg-white/50 transition-colors cursor-pointer group">
+                <div className="glass-card p-5 rounded-3xl flex flex-col items-center justify-center text-center hover:bg-white/60 transition-colors cursor-pointer group shadow-sm hover:shadow-md">
                     <div className="w-12 h-12 rounded-2xl bg-pink-100 flex items-center justify-center text-pink-600 mb-3 group-hover:scale-110 transition-transform">
                         <BarChart3 className="h-6 w-6" />
                     </div>
@@ -249,7 +268,7 @@ export function Dashboard() {
                     <div className="text-xs text-slate-500 font-medium">CGPA</div>
                 </div>
 
-                <div className="glass-card p-5 rounded-3xl flex flex-col items-center justify-center text-center hover:bg-white/50 transition-colors cursor-pointer group">
+                <div className="glass-card p-5 rounded-3xl flex flex-col items-center justify-center text-center hover:bg-white/60 transition-colors cursor-pointer group shadow-sm hover:shadow-md">
                     <div className="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center text-blue-600 mb-3 group-hover:scale-110 transition-transform">
                         <ListChecks className="h-6 w-6" />
                     </div>
@@ -282,7 +301,7 @@ export function Dashboard() {
             <div className="flex justify-center">
                 <button
                     onClick={() => window.location.href = '/developer'}
-                    className="glass-card px-6 py-2 rounded-full flex items-center gap-2 text-slate-500 font-medium text-sm hover:bg-white/50 transition-colors group"
+                    className="glass-card px-6 py-2 rounded-full flex items-center gap-2 text-slate-500 font-medium text-sm hover:bg-white/60 transition-all group hover:scale-105"
                 >
                     <span>Made by Developer</span>
                     <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center group-hover:bg-primary-100 group-hover:text-primary-600 transition-colors">
@@ -290,6 +309,15 @@ export function Dashboard() {
                     </div>
                 </button>
             </div>
+
+            {SubjectVault && vaultSubject && (
+                <SubjectVault
+                    isOpen={isVaultOpen}
+                    onClose={() => setIsVaultOpen(false)}
+                    subjectName={vaultSubject.name}
+                    subjectCode={vaultSubject.code}
+                />
+            )}
         </div>
     );
 }

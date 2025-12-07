@@ -2,13 +2,16 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Settings, ChevronRight, Loader2, Palette, GraduationCap, Target, Trash2, Info } from 'lucide-react';
+import { LogOut, Settings, ChevronRight, Loader2, Palette, GraduationCap, Target, Trash2, Info, Download, FileText, Sparkles, RefreshCw, Moon, Sun, Trophy } from 'lucide-react';
 import { EditProfileModal } from '../components/profile/EditProfileModal';
 import { AppSettingsModal } from '../components/profile/AppSettingsModal';
 import { cn } from '../lib/utils';
 import { fetchAIQuote, AIQuoteResponse } from '../lib/ai';
-import { Sparkles, RefreshCw } from 'lucide-react';
 import { SEO } from '../components/SEO';
+import { useTheme } from '../context/ThemeContext';
+import { exportDataAsJSON, generatePDFReport } from '../lib/export';
+import { useToast } from '../context/ToastContext';
+import { useGamification } from '../context/GamificationContext';
 
 interface ProfileData {
     full_name: string | null;
@@ -34,6 +37,9 @@ const THEMES = [
 
 export function Profile() {
     const { user } = useAuth();
+    const { mode, setTheme, setMode } = useTheme();
+    const { addToast } = useToast();
+    const { level, xp } = useGamification();
     const navigate = useNavigate();
     const [profile, setProfile] = useState<ProfileData | null>(null);
     const [loading, setLoading] = useState(true);
@@ -42,6 +48,7 @@ export function Profile() {
     const [quote, setQuote] = useState<AIQuoteResponse | null>(null);
     const [isQuoteLoading, setIsQuoteLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
+    const [exporting, setExporting] = useState(false);
 
     const loadQuote = async () => {
         try {
@@ -88,8 +95,7 @@ export function Profile() {
             };
             setProfile(profileData);
 
-            // Apply theme
-            document.documentElement.setAttribute('data-theme', profileData.accent_color || 'purple');
+            if (profileData.accent_color) setTheme(profileData.accent_color as any);
         } catch (error) {
             console.error('Error:', error);
         } finally {
@@ -106,13 +112,10 @@ export function Profile() {
         navigate('/login');
     };
 
-
-
     const handleThemeChange = async (color: string) => {
         if (!user || !profile) return;
-
+        setTheme(color as any);
         setProfile({ ...profile, accent_color: color });
-        document.documentElement.setAttribute('data-theme', color);
 
         await supabase
             .from('profiles')
@@ -125,7 +128,6 @@ export function Profile() {
         const goal = parseInt(e.target.value);
         setProfile({ ...profile, attendance_goal: goal });
 
-        // Debounce update to DB could be better, but direct update for now
         await supabase
             .from('profiles')
             .update({ attendance_goal: goal })
@@ -167,12 +169,39 @@ export function Profile() {
                 }
 
                 setProfile({ ...profile, avatar_url: publicUrl });
+                addToast('Profile picture updated!', 'success');
             }
         } catch (error) {
-            alert('Error uploading avatar!');
+            addToast('Error uploading avatar!', 'error');
             console.error(error);
         } finally {
             setUploading(false);
+        }
+    };
+
+    const handleExportJSON = async () => {
+        if (!user) return;
+        try {
+            setExporting(true);
+            await exportDataAsJSON(user.id);
+            addToast('Backup downloaded successfully.', 'success');
+        } catch (e) {
+            addToast('Failed to backup data.', 'error');
+        } finally {
+            setExporting(false);
+        }
+    };
+
+    const handleExportPDF = async () => {
+        if (!user) return;
+        try {
+            setExporting(true);
+            await generatePDFReport(user.id);
+            addToast('PDF report generated.', 'success');
+        } catch (e) {
+            addToast('Failed to generate PDF report.', 'error');
+        } finally {
+            setExporting(false);
         }
     };
 
@@ -184,10 +213,10 @@ export function Profile() {
             await supabase.from('timetable_entries').delete().eq('user_id', user.id);
             await supabase.from('smart_timetable_entries').delete().eq('user_id', user.id);
             await supabase.from('attendance_logs').delete().eq('user_id', user.id);
-            alert('All data has been reset successfully.');
+            addToast('All data has been reset successfully.', 'success');
         } catch (error) {
             console.error('Error resetting data:', error);
-            alert('Failed to reset data.');
+            addToast('Failed to reset data.', 'error');
         } finally {
             setLoading(false);
         }
@@ -259,6 +288,12 @@ export function Profile() {
                             )}
                         </div>
                     )}
+                    <div className="flex items-center gap-2 mt-3 p-1.5 bg-yellow-50/80 rounded-lg w-fit">
+                        <Trophy className="h-3 w-3 text-yellow-600" />
+                        <span className="text-xs font-bold text-yellow-700">Lvl {level} Scholar</span>
+                        <div className="h-2 w-px bg-yellow-200 mx-1"></div>
+                        <span className="text-xs text-yellow-600">{xp} XP</span>
+                    </div>
                 </div>
                 <button
                     onClick={() => setIsEditModalOpen(true)}
@@ -331,6 +366,35 @@ export function Profile() {
                 </div>
             </div>
 
+            {/* Dark Mode Toggle */}
+            <div className="space-y-3">
+                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider ml-2">Display Mode</h3>
+                <div className="glass-card rounded-3xl p-5 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className={cn(
+                            "w-8 h-8 rounded-full flex items-center justify-center transition-colors",
+                            mode === 'dark' ? "bg-slate-700 text-slate-300" : "bg-orange-100 text-orange-500"
+                        )}>
+                            {mode === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+                        </div>
+                        <span className="font-medium text-slate-700 dark:text-slate-200">Dark Mode</span>
+                    </div>
+
+                    <button
+                        onClick={() => setMode(mode === 'light' ? 'dark' : 'light')}
+                        className={cn(
+                            "w-14 h-8 rounded-full transition-colors relative",
+                            mode === 'dark' ? "bg-primary-600" : "bg-slate-200"
+                        )}
+                    >
+                        <div className={cn(
+                            "absolute top-1 left-1 bg-white w-6 h-6 rounded-full shadow-sm transition-transform duration-300",
+                            mode === 'dark' ? "translate-x-6" : "translate-x-0"
+                        )} />
+                    </button>
+                </div>
+            </div>
+
             {/* Goals Section */}
             <div className="space-y-3">
                 <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider ml-2">Goals</h3>
@@ -386,10 +450,38 @@ export function Profile() {
             {/* Danger Zone */}
             <div className="space-y-3">
                 <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider ml-2">Data Management</h3>
-                <div className="glass-card rounded-3xl overflow-hidden">
+                <div className="glass-card rounded-3xl overflow-hidden p-2 space-y-2">
+                    <button
+                        onClick={handleExportPDF}
+                        disabled={exporting}
+                        className="w-full p-4 flex items-center justify-between hover:bg-white/40 rounded-2xl transition-colors group"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 group-hover:bg-blue-200 transition-colors">
+                                {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+                            </div>
+                            <span className="font-medium text-slate-700">Export Report (PDF)</span>
+                        </div>
+                    </button>
+
+                    <button
+                        onClick={handleExportJSON}
+                        disabled={exporting}
+                        className="w-full p-4 flex items-center justify-between hover:bg-white/40 rounded-2xl transition-colors group"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-200 transition-colors">
+                                {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                            </div>
+                            <span className="font-medium text-slate-700">Backup Data (JSON)</span>
+                        </div>
+                    </button>
+
+                    <div className="h-px bg-slate-100 mx-4" />
+
                     <button
                         onClick={handleResetData}
-                        className="w-full p-4 flex items-center justify-between hover:bg-red-50 transition-colors group"
+                        className="w-full p-4 flex items-center justify-between hover:bg-red-50 rounded-2xl transition-colors group"
                     >
                         <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-600 group-hover:bg-red-200 transition-colors">
@@ -405,7 +497,7 @@ export function Profile() {
             <div className="text-center py-6">
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/30 text-slate-500 text-xs font-medium">
                     <Info className="h-3 w-3" />
-                    <span>Version 2.9.0 • Made By Ambalavanan </span>
+                    <span>Version 10.41.15.1 • Made By Ambalavanan </span>
                 </div>
             </div>
 
