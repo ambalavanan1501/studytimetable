@@ -28,7 +28,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     );
 
     return (
-        <div className="min-h-screen bg-background relative overflow-hidden font-sans">
+        <div className="min-h-screen pb-24 relative overflow-hidden font-sans text-slate-900 bg-slate-50">
             {/* Animated Background Blobs */}
             <div className="fixed inset-0 pointer-events-none overflow-hidden">
                 <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary-300/30 rounded-full blur-3xl animate-blob mix-blend-multiply filter"></div>
@@ -38,12 +38,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
             {/* Desktop Sidebar */}
             {isDesktop && (
-                <aside className="fixed left-0 top-0 h-screen w-64 glass border-r border-white/20 z-50 p-6 flex flex-col">
+                <aside className="fixed left-0 top-0 h-screen w-64 bg-white/70 backdrop-blur-xl border-r border-slate-200/50 z-50 p-6 flex flex-col">
                     <div className="mb-10 flex items-center gap-3 px-2">
                         <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center text-white font-bold">
                             A
                         </div>
-                        <span className="text-xl font-bold text-foreground">Attendance</span>
+                        <span className="text-xl font-bold text-slate-800 tracking-tight">Antigravity</span>
                     </div>
 
                     <nav className="space-y-2 flex-1">
@@ -56,7 +56,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
                     <button
                         onClick={() => signOut()}
-                        className="flex items-center gap-3 p-3 rounded-xl text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-all"
+                        className="flex items-center gap-3 p-3 rounded-xl text-slate-500 hover:text-red-500 hover:bg-red-50 transition-all mb-4"
                     >
                         <LogOut className="h-6 w-6" />
                         <span className="font-bold text-sm">Sign Out</span>
@@ -79,7 +79,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             {/* Mobile Bottom Navigation */}
             {!isDesktop && (
                 <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-[380px] z-50">
-                    <nav className="glass-nav rounded-2xl px-6 py-4 flex justify-between items-center">
+                    <nav className="glass-nav bg-white/80 backdrop-blur-lg border border-white/20 shadow-lg rounded-2xl px-6 py-4 flex justify-between items-center">
                         <Link to="/" className={cn("p-2 rounded-xl transition-all duration-300", isActive('/') ? "bg-primary-100 text-primary-600 scale-110" : "text-slate-400 hover:text-primary-400")}>
                             <Home className="h-6 w-6" />
                         </Link>

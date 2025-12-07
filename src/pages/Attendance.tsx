@@ -148,7 +148,7 @@ export function Attendance() {
     };
 
     return (
-        <div className="p-6 space-y-6 pb-24">
+        <div className="p-6 space-y-6 pb-24 staggered-fade-in">
             <h1 className="text-2xl font-bold text-slate-800 mt-4">Attendance</h1>
 
             {/* View Switcher */}
