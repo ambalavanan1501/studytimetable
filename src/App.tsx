@@ -20,6 +20,7 @@ const Tasks = lazy(() => import('./pages/Tasks').then(module => ({ default: modu
 const Attendance = lazy(() => import('./pages/Attendance').then(module => ({ default: module.Attendance })));
 const Simulator = lazy(() => import('./pages/Simulator').then(module => ({ default: module.Simulator })));
 const Layout = lazy(() => import('./components/Layout').then(module => ({ default: module.Layout })));
+import ScrollToTop from './components/ScrollToTop';
 
 // Loading component
 const PageLoader = () => (
@@ -49,6 +50,7 @@ function App() {
     return (
         <HelmetProvider>
             <Router>
+                <ScrollToTop />
                 <AuthProvider>
                     <ThemeProvider>
                         <ToastProvider>
