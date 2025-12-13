@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Calendar, User, CalendarCheck, LogOut, Calculator } from 'lucide-react';
+import { Home, Calendar, User, CalendarCheck, LogOut, Calculator, Menu, FileText, X } from 'lucide-react';
+import { useState } from 'react';
 import { cn } from '../lib/utils';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useAuth } from '../context/AuthContext';
@@ -9,6 +10,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     const location = useLocation();
     const isDesktop = useMediaQuery('(min-width: 768px)');
     const { signOut } = useAuth();
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     const isActive = (path: string) => location.pathname === path;
 
@@ -99,33 +101,73 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </div>
             </div>
 
-            {/* Mobile Floating Capsule */}
+            {/* Mobile Floating Dock */}
+            {/* Mobile Floating Dock */}
             {!isDesktop && (
-                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-[400px] z-50">
-                    <nav className="glass-vision rounded-full px-2 py-2 flex justify-between items-center ring-1 ring-white/40 shadow-2xl">
-                        {[
-                            { to: '/', icon: Home },
-                            { to: '/schedule', icon: Calendar },
-                            { to: '/tasks', icon: CalendarCheck },
-                            { to: '/notes', icon: Calendar }, // Reusing Calendar icon as placeholder or needs Note icon
-                            { to: '/profile', icon: User }
-                        ].map((item) => (
-                            <Link
-                                key={item.to}
-                                to={item.to}
-                                className={cn(
-                                    "p-4 rounded-full transition-all duration-500 ease-spring relative isolate",
-                                    isActive(item.to)
-                                        ? "bg-white shadow-[0_4px_12px_rgba(0,0,0,0.1)] -translate-y-4 scale-110 z-10"
-                                        : "text-slate-400 hover:text-primary-500"
-                                )}
-                            >
-                                <item.icon className={cn("h-6 w-6 transition-all", isActive(item.to) ? "text-primary-600 fill-primary-100 scale-110" : "")} />
-                                {isActive(item.to) && <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-[10px] font-bold text-slate-500 bg-white/80 px-2 py-0.5 rounded-full backdrop-blur-md opacity-0 animate-fade-in-up">Active</span>}
+                <>
+                    {/* Menu Overlay */}
+                    <div className={cn(
+                        "fixed inset-0 bg-black/20 backdrop-blur-sm z-40 transition-all duration-300",
+                        isMenuOpen ? "opacity-100 visible" : "opacity-0 invisible pointer-events-none"
+                    )} onClick={() => setIsMenuOpen(false)} />
+
+                    {/* Menu Popup */}
+                    <div className={cn(
+                        "fixed bottom-24 right-4 sm:right-1/2 sm:translate-x-1/2 z-50 glass-vision p-4 rounded-[2rem] shadow-[0_20px_60px_rgba(0,0,0,0.3)] min-w-[200px] transform transition-all duration-300 origin-bottom-right",
+                        isMenuOpen ? "scale-100 opacity-100 translate-y-0" : "scale-90 opacity-0 translate-y-10 pointer-events-none"
+                    )}>
+                        <div className="flex flex-col gap-2">
+                            {[
+                                { to: '/tasks', icon: CalendarCheck, label: 'Assignments', color: 'text-blue-500' },
+                                { to: '/notes', icon: FileText, label: 'Notes', color: 'text-yellow-500' },
+                                { to: '/simulator', icon: Calculator, label: 'Simulator', color: 'text-purple-500' }
+                            ].map((item) => (
+                                <Link
+                                    key={item.to}
+                                    to={item.to}
+                                    onClick={() => setIsMenuOpen(false)}
+                                    className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white/40 transition-colors group"
+                                >
+                                    <div className={cn("p-2 rounded-xl bg-white/50 shadow-sm group-hover:scale-110 transition-transform", item.color)}>
+                                        <item.icon className="w-5 h-5" />
+                                    </div>
+                                    <span className="font-bold text-slate-700 text-sm tracking-wide">{item.label}</span>
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+                        <nav className="glass-vision px-6 py-3 rounded-full flex items-center gap-8 shadow-[0_20px_50px_rgba(0,0,0,0.15)] ring-1 ring-white/50 backdrop-blur-[50px]">
+                            <Link to="/" className="relative group flex flex-col items-center justify-center w-10 h-10">
+                                <div className={cn("absolute inset-0 rounded-2xl bg-gradient-to-tr from-primary-500 to-indigo-500 opacity-0 transition-all duration-500 ease-out", isActive('/') ? "opacity-100 scale-100 shadow-[0_0_20px_rgba(100,100,255,0.4)]" : "scale-50")} />
+                                <Home className={cn("relative z-10 w-5 h-5 transition-all duration-500 ease-spring", isActive('/') ? "text-white" : "text-slate-400")} />
                             </Link>
-                        ))}
-                    </nav>
-                </div>
+
+                            <Link to="/schedule" className="relative group flex flex-col items-center justify-center w-10 h-10">
+                                <div className={cn("absolute inset-0 rounded-2xl bg-gradient-to-tr from-primary-500 to-indigo-500 opacity-0 transition-all duration-500 ease-out", isActive('/schedule') ? "opacity-100 scale-100 shadow-[0_0_20px_rgba(100,100,255,0.4)]" : "scale-50")} />
+                                <Calendar className={cn("relative z-10 w-5 h-5 transition-all duration-500 ease-spring", isActive('/schedule') ? "text-white" : "text-slate-400")} />
+                            </Link>
+
+                            <Link to="/attendance" className="relative group flex flex-col items-center justify-center w-10 h-10">
+                                <div className={cn("absolute inset-0 rounded-2xl bg-gradient-to-tr from-primary-500 to-indigo-500 opacity-0 transition-all duration-500 ease-out", isActive('/attendance') ? "opacity-100 scale-100 shadow-[0_0_20px_rgba(100,100,255,0.4)]" : "scale-50")} />
+                                <CalendarCheck className={cn("relative z-10 w-5 h-5 transition-all duration-500 ease-spring", isActive('/attendance') ? "text-white" : "text-slate-400")} />
+                            </Link>
+
+                            <button
+                                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                                className="relative group flex flex-col items-center justify-center w-10 h-10"
+                            >
+                                <div className={cn("absolute inset-0 rounded-2xl bg-slate-900 opacity-0 transition-all duration-500 ease-out", isMenuOpen ? "opacity-100 scale-100 shadow-[0_0_20px_rgba(0,0,0,0.3)]" : "scale-50")} />
+                                {isMenuOpen ? (
+                                    <X className={cn("relative z-10 w-5 h-5 transition-all duration-500 ease-spring text-white")} />
+                                ) : (
+                                    <Menu className={cn("relative z-10 w-5 h-5 transition-all duration-500 ease-spring text-slate-400 group-hover:text-slate-800")} />
+                                )}
+                            </button>
+                        </nav>
+                    </div>
+                </>
             )}
         </div>
     );

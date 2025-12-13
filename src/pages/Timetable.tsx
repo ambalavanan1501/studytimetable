@@ -114,7 +114,7 @@ export function Timetable() {
 
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mt-4 px-2">
                 <div className="flex flex-col gap-2">
-                    <h1 className="text-4xl md:text-5xl font-semibold text-slate-900 tracking-tighter leading-none">Schedule</h1>
+                    <h1 className="text-3xl md:text-5xl font-semibold text-slate-900 tracking-tighter leading-none">Schedule</h1>
                     <p className="text-lg text-slate-500 font-medium font-display tracking-wide">Your week at a glance.</p>
                 </div>
                 <CalendarExportBtn />
@@ -122,7 +122,7 @@ export function Timetable() {
 
             {/* NikiOS Day Selector */}
             <div className="sticky top-4 z-40 mx-auto max-w-fit">
-                <div className="glass-vision rounded-full p-2 flex gap-1 shadow-2xl backdrop-blur-3xl border border-white/60">
+                <div className="glass-vision rounded-full p-2 flex gap-1 shadow-2xl backdrop-blur-3xl border border-white/60 overflow-x-auto no-scrollbar max-w-full">
                     {days.map((day) => (
                         <button
                             key={day}
@@ -187,7 +187,7 @@ export function Timetable() {
                                                 {entry.subject_code}
                                             </span>
                                         </div>
-                                        <h3 className="font-bold text-xl text-slate-800 leading-tight tracking-tight">{entry.subject_name}</h3>
+                                        <h3 className="font-bold text-lg md:text-xl text-slate-800 leading-tight tracking-tight">{entry.subject_name}</h3>
                                         <div className="flex items-center gap-2">
                                             <span className={cn(
                                                 "text-xs font-bold uppercase tracking-wider",

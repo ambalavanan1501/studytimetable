@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Clock, MapPin, ListChecks, BookOpen, User, Flame } from 'lucide-react';
@@ -25,8 +26,8 @@ import {
 } from '@dnd-kit/sortable';
 import { SortableWidget } from '../components/dashboard/SortableWidget';
 import { SubjectVault } from '../components/vault/SubjectVault';
-import { AiCompanionModal } from '../components/ai/AiCompanionModal';
-import { Bot } from 'lucide-react';
+
+
 
 export function Dashboard() {
     const { user } = useAuth();
@@ -35,7 +36,7 @@ export function Dashboard() {
     const [ongoingClass, setOngoingClass] = useState<any>(null);
     const [userName, setUserName] = useState('Student');
     const [attendancePercentage, setAttendancePercentage] = useState(0);
-    const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+
     const [currentTime, setCurrentTime] = useState(new Date());
     const [attendanceGoal, setAttendanceGoal] = useState(75);
     const [cgpa, setCgpa] = useState(0);
@@ -162,17 +163,19 @@ export function Dashboard() {
             {/* iOS 26 Header */}
             <div className="flex flex-col md:flex-row justify-between items-end gap-6">
                 <div className="flex items-center gap-8">
-                    {avatarUrl ? (
-                        <div className="w-16 h-16 rounded-[1.5rem] overflow-hidden border border-white/50 shadow-2xl shadow-indigo-500/20 animate-breathe">
-                            <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
-                        </div>
-                    ) : (
-                        <div className="w-16 h-16 rounded-[1.5rem] glass-vision flex items-center justify-center text-slate-400 border border-white/50 shadow-2xl animate-breathe">
-                            <User className="h-8 w-8 text-primary-300" />
-                        </div>
-                    )}
+                    <Link to="/profile">
+                        {avatarUrl ? (
+                            <div className="w-16 h-16 rounded-[1.5rem] overflow-hidden border border-white/50 shadow-2xl shadow-indigo-500/20 animate-breathe transition-transform hover:scale-105 active:scale-95">
+                                <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+                            </div>
+                        ) : (
+                            <div className="w-16 h-16 rounded-[1.5rem] glass-vision flex items-center justify-center text-slate-400 border border-white/50 shadow-2xl animate-breathe transition-transform hover:scale-105 active:scale-95">
+                                <User className="h-8 w-8 text-primary-300" />
+                            </div>
+                        )}
+                    </Link>
                     <div>
-                        <h1 className="text-4xl md:text-5xl font-semibold tracking-tighter text-slate-900 leading-none">
+                        <h1 className="text-3xl md:text-5xl font-semibold tracking-tighter text-slate-900 leading-none">
                             Hello, <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-indigo-400">{userName}</span>
                         </h1>
                         <p className="text-lg text-slate-500 font-medium mt-1 tracking-wide font-display">Your focus space is ready.</p>
@@ -254,7 +257,7 @@ export function Dashboard() {
 
                             {ongoingClass ? (
                                 <div className="space-y-2">
-                                    <h2 className="text-4xl md:text-5xl font-bold text-slate-900 tracking-tighter leading-[0.9]">{ongoingClass.subject_name}</h2>
+                                    <h2 className="text-3xl md:text-5xl font-bold text-slate-900 tracking-tighter leading-[0.9]">{ongoingClass.subject_name}</h2>
                                     <p className="text-lg md:text-xl text-slate-500 font-medium tracking-wide">{ongoingClass.subject_code}</p>
                                 </div>
                             ) : nextClass ? (
@@ -344,7 +347,7 @@ export function Dashboard() {
                         )}>
                             <Clock className="h-6 w-6" />
                         </div>
-                        <div className="text-5xl font-bold text-slate-800 tracking-tighter mb-2 font-variant-numeric tabular-nums">
+                        <div className="text-4xl md:text-5xl font-bold text-slate-800 tracking-tighter mb-2 font-variant-numeric tabular-nums">
                             {attendancePercentage}%
                         </div>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Attendance</p>
@@ -376,16 +379,7 @@ export function Dashboard() {
                 />
             )}
 
-            {/* AI Companion FAB */}
-            <button
-                onClick={() => setIsAiModalOpen(true)}
-                className="fixed bottom-6 right-6 z-50 p-4 rounded-full bg-indigo-600 text-white shadow-xl hover:shadow-2xl hover:scale-110 transition-all duration-300 animate-in zoom-in group"
-            >
-                <Bot className="h-6 w-6 group-hover:rotate-12 transition-transform" />
-                <span className="absolute -top-2 -right-2 w-3 h-3 bg-red-500 rounded-full animate-pulse border-2 border-white"></span>
-            </button>
 
-            <AiCompanionModal isOpen={isAiModalOpen} onClose={() => setIsAiModalOpen(false)} />
         </div>
     );
 }

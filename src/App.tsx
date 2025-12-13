@@ -120,6 +120,7 @@ function App() {
                                                 </Layout>
                                             </ProtectedRoute>
                                         } />
+
                                     </Routes>
                                 </Suspense>
                             </GamificationProvider>

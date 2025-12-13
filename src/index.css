@@ -147,16 +147,16 @@
 /* NikiOS Glass Utilities */
 .glass-vision {
   @apply bg-white/40 backdrop-blur-[40px] border border-white/40;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08), 0 10px 20px rgba(0, 0, 0, 0.05);
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.1) 100%);
 }
 
 .glass-panel {
-  @apply bg-white/60 backdrop-blur-3xl border border-white/50 shadow-sm transition-all duration-500 hover:shadow-md;
+  @apply bg-white/60 backdrop-blur-3xl border border-white/50 shadow-md transition-all duration-500 hover:shadow-xl;
 }
 
 .glass-button {
-  @apply bg-white/50 backdrop-blur-xl border border-white/40 shadow-sm hover:bg-white/80 active:scale-95 transition-all duration-300;
+  @apply bg-white/50 backdrop-blur-xl border border-white/40 shadow-sm hover:bg-white/80 active:scale-95 transition-all duration-300 hover:shadow-lg;
 }
 
 /* Typography Enhancements */
@@ -171,7 +171,7 @@ h6 {
 }
 
 .display-text {
-  @apply text-4xl md:text-5xl font-semibold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-slate-800 to-slate-500;
+  @apply text-3xl md:text-5xl font-semibold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-slate-800 to-slate-500;
 }
 
 /* Hide Scrollbar */
