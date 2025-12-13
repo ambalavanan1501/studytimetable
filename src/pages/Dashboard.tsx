@@ -65,59 +65,47 @@ export function Dashboard() {
         if (!user) return;
 
         const fetchDashboardData = async () => {
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('full_name, attendance_goal, cgpa, credits, avatar_url')
-                .eq('id', user.id)
-                .single();
-
-            if (profile) {
-                if (profile.full_name) setUserName(profile.full_name.split(' ')[0]);
-                if (profile.attendance_goal) setAttendanceGoal(profile.attendance_goal);
-                if (profile.cgpa) setCgpa(profile.cgpa);
-                if (profile.credits) setCredits(profile.credits);
-                if (profile.avatar_url) setAvatarUrl(profile.avatar_url);
-            }
-
             const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
             // For demo, if weekend, default to Monday
             const queryDay = ['Saturday', 'Sunday'].includes(today) ? 'Monday' : today;
 
-            const { data: basic } = await supabase
-                .from('timetable_entries')
-                .select('*')
-                .eq('user_id', user.id)
-                .eq('day', queryDay);
+            try {
+                const [profileRes, basicRes, smartRes, logsRes] = await Promise.all([
+                    supabase.from('profiles').select('full_name, attendance_goal, cgpa, credits, avatar_url').eq('id', user.id).single(),
+                    supabase.from('timetable_entries').select('*').eq('user_id', user.id).eq('day', queryDay),
+                    supabase.from('smart_timetable_entries').select('*').eq('user_id', user.id).eq('day', queryDay),
+                    supabase.from('attendance_logs').select('status').eq('user_id', user.id)
+                ]);
 
-            const { data: smart } = await supabase
-                .from('smart_timetable_entries')
-                .select('*')
-                .eq('user_id', user.id)
-                .eq('day', queryDay);
+                if (profileRes.data) {
+                    const profile = profileRes.data;
+                    if (profile.full_name) setUserName(profile.full_name.split(' ')[0]);
+                    if (profile.attendance_goal) setAttendanceGoal(profile.attendance_goal);
+                    if (profile.cgpa) setCgpa(profile.cgpa);
+                    if (profile.credits) setCredits(profile.credits);
+                    if (profile.avatar_url) setAvatarUrl(profile.avatar_url);
+                }
 
-            const all = [...(basic || []), ...(smart || [])];
-            all.sort((a, b) => a.start_time.localeCompare(b.start_time));
+                const all = [...(basicRes.data || []), ...(smartRes.data || [])];
+                all.sort((a, b) => a.start_time.localeCompare(b.start_time));
 
-            // Find next and ongoing class based on current time
-            const now = new Date();
-            const timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+                // Find next and ongoing class based on current time
+                const now = new Date();
+                const timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
 
-            const current = all.find(c => c.start_time <= timeStr && c.end_time > timeStr);
-            const upcoming = all.find(c => c.start_time > timeStr);
+                const current = all.find(c => c.start_time <= timeStr && c.end_time > timeStr);
+                const upcoming = all.find(c => c.start_time > timeStr);
 
-            setOngoingClass(current || null);
-            setNextClass(upcoming || all[0]); // Default to first class if day is over or just started
+                setOngoingClass(current || null);
+                setNextClass(upcoming || all[0]); // Default to first class if day is over or just started
 
-            // Calculate Attendance Percentage
-            const { data: logs } = await supabase
-                .from('attendance_logs')
-                .select('status')
-                .eq('user_id', user.id);
-
-            if (logs && logs.length > 0) {
-                const present = logs.filter(l => l.status === 'present').length;
-                const total = logs.length;
-                setAttendancePercentage(Math.round((present / total) * 100));
+                if (logsRes.data && logsRes.data.length > 0) {
+                    const present = logsRes.data.filter(l => l.status === 'present').length;
+                    const total = logsRes.data.length;
+                    setAttendancePercentage(Math.round((present / total) * 100));
+                }
+            } catch (error) {
+                console.error('Error fetching dashboard data:', error);
             }
         };
 

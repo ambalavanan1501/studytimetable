@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Plus, Calendar as CalendarIcon, Clock, MapPin } from 'lucide-react';
 import { SmartAddModal } from '../components/timetable/SmartAddModal';
 import { supabase } from '../lib/supabase';
@@ -26,7 +26,45 @@ export function Timetable() {
         }
     }, []);
 
-    const fetchEntries = async () => {
+    // Fetch Attendance Stats (Run once or when user changes)
+    useEffect(() => {
+        const fetchAttendanceStats = async () => {
+            if (!user) return;
+
+            try {
+                const { data: logs } = await supabase
+                    .from('attendance_logs')
+                    .select('subject_code, status')
+                    .eq('user_id', user.id);
+
+                const stats: Record<string, number> = {};
+                if (logs) {
+                    const subjectLogs: Record<string, { present: number; total: number }> = {};
+                    logs.forEach(log => {
+                        if (!subjectLogs[log.subject_code]) {
+                            subjectLogs[log.subject_code] = { present: 0, total: 0 };
+                        }
+                        subjectLogs[log.subject_code].total++;
+                        if (log.status === 'present') {
+                            subjectLogs[log.subject_code].present++;
+                        }
+                    });
+
+                    Object.keys(subjectLogs).forEach(code => {
+                        const { present, total } = subjectLogs[code];
+                        stats[code] = total > 0 ? Math.round((present / total) * 100) : 0;
+                    });
+                }
+                setAttendanceStats(stats);
+            } catch (error) {
+                console.error('Error fetching attendance stats:', error);
+            }
+        };
+
+        fetchAttendanceStats();
+    }, [user]);
+
+    const fetchTimetable = useCallback(async () => {
         if (!user) {
             setLoading(false);
             return;
@@ -34,68 +72,32 @@ export function Timetable() {
         setLoading(true);
 
         try {
-            console.log('Fetching entries for:', selectedDay);
-            // Fetch from both tables
-            const { data: basicEntries, error: basicError } = await supabase
-                .from('timetable_entries')
-                .select('*')
-                .eq('user_id', user.id)
-                .eq('day', selectedDay);
+            // Fetch from both tables concurrently
+            const [basicRes, smartRes] = await Promise.all([
+                supabase.from('timetable_entries').select('*').eq('user_id', user.id).eq('day', selectedDay),
+                supabase.from('smart_timetable_entries').select('*').eq('user_id', user.id).eq('day', selectedDay)
+            ]);
 
-            if (basicError) console.error('Basic Fetch Error:', basicError);
+            if (basicRes.error) console.error('Basic Fetch Error:', basicRes.error);
+            if (smartRes.error) console.error('Smart Fetch Error:', smartRes.error);
 
-            const { data: smartEntries, error: smartError } = await supabase
-                .from('smart_timetable_entries')
-                .select('*')
-                .eq('user_id', user.id)
-                .eq('day', selectedDay);
-
-            if (smartError) console.error('Smart Fetch Error:', smartError);
-
-            // Fetch attendance logs for all subjects
-            const { data: logs } = await supabase
-                .from('attendance_logs')
-                .select('subject_code, status')
-                .eq('user_id', user.id);
-
-            // Calculate stats
-            const stats: Record<string, number> = {};
-            if (logs) {
-                const subjectLogs: Record<string, { present: number; total: number }> = {};
-                logs.forEach(log => {
-                    if (!subjectLogs[log.subject_code]) {
-                        subjectLogs[log.subject_code] = { present: 0, total: 0 };
-                    }
-                    subjectLogs[log.subject_code].total++;
-                    if (log.status === 'present') {
-                        subjectLogs[log.subject_code].present++;
-                    }
-                });
-
-                Object.keys(subjectLogs).forEach(code => {
-                    const { present, total } = subjectLogs[code];
-                    stats[code] = total > 0 ? Math.round((present / total) * 100) : 0;
-                });
-            }
-            setAttendanceStats(stats);
-
-            const allEntries = [...(basicEntries || []), ...(smartEntries || [])];
-            console.log(`Found ${allEntries.length} entries for ${selectedDay}`);
+            const allEntries = [...(basicRes.data || []), ...(smartRes.data || [])];
 
             // Sort by start time
             allEntries.sort((a, b) => a.start_time.localeCompare(b.start_time));
 
             setEntries(allEntries);
         } catch (error) {
-            console.error('Error fetching entries:', error);
+            console.error('Error fetching timetable:', error);
         } finally {
             setLoading(false);
         }
-    };
+    }, [user, selectedDay]); // Dependencies for useCallback
 
+    // Fetch Timetable Entries (Run when day changes)
     useEffect(() => {
-        fetchEntries();
-    }, [user, selectedDay]);
+        fetchTimetable();
+    }, [fetchTimetable]); // fetchTimetable is now a stable dependency due to useCallback
 
     const formatTime = (time: string) => {
         const [hours, minutes] = time.split(':');
@@ -244,7 +246,7 @@ export function Timetable() {
             <SmartAddModal
                 isOpen={isSmartAddOpen}
                 onClose={() => setIsSmartAddOpen(false)}
-                onSuccess={fetchEntries}
+                onSuccess={fetchTimetable}
             />
         </div>
     );

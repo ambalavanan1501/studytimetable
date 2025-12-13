@@ -92,7 +92,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             {/* Main Content Area */}
             <div className={cn(
                 "relative z-10 min-h-screen transition-all duration-500 ease-out",
-                isDesktop ? "ml-72 p-6" : "pb-32 px-4 pt-4 max-w-lg mx-auto"
+                isDesktop ? "ml-72 p-6" : "pb-32 px-4 pt-14 max-w-lg mx-auto"
             )}>
                 <div className={cn("mx-auto h-full", isDesktop ? "max-w-5xl" : "")}>
                     <PageTransition>
