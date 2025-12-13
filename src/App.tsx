@@ -3,8 +3,6 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './context/ToastContext';
 import { GamificationProvider } from './context/GamificationContext';
-import { FlowProvider } from './context/FlowContext';
-import { FlowDock } from './components/flow/FlowDock';
 import { HelmetProvider } from 'react-helmet-async';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
@@ -55,77 +53,75 @@ function App() {
                     <ThemeProvider>
                         <ToastProvider>
                             <GamificationProvider>
-                                <FlowProvider>
-                                    <Suspense fallback={<PageLoader />}>
-                                        <Routes>
-                                            <Route path="/login" element={<Login />} />
-                                            <Route path="/" element={
-                                                <ProtectedRoute>
-                                                    <Layout>
-                                                        <Dashboard />
-                                                    </Layout>
-                                                </ProtectedRoute>
-                                            } />
-                                            <Route path="/schedule" element={
-                                                <ProtectedRoute>
-                                                    <Layout>
-                                                        <Timetable />
-                                                    </Layout>
-                                                </ProtectedRoute>
-                                            } />
-                                            <Route path="/attendance" element={
-                                                <ProtectedRoute>
-                                                    <Layout>
-                                                        <Attendance />
-                                                    </Layout>
-                                                </ProtectedRoute>
-                                            } />
-                                            <Route path="/profile" element={
-                                                <ProtectedRoute>
-                                                    <Layout>
-                                                        <Profile />
-                                                    </Layout>
-                                                </ProtectedRoute>
-                                            } />
-                                            <Route path="/developer" element={
-                                                <ProtectedRoute>
-                                                    <Layout>
-                                                        <Developer />
-                                                    </Layout>
-                                                </ProtectedRoute>
-                                            } />
-                                            <Route path="/notes" element={
-                                                <ProtectedRoute>
-                                                    <Layout>
-                                                        <StickyNotes />
-                                                    </Layout>
-                                                </ProtectedRoute>
-                                            } />
-                                            <Route path="/countdown" element={
-                                                <ProtectedRoute>
-                                                    <Layout>
-                                                        <Countdown />
-                                                    </Layout>
-                                                </ProtectedRoute>
-                                            } />
-                                            <Route path="/tasks" element={
-                                                <ProtectedRoute>
-                                                    <Layout>
-                                                        <Tasks />
-                                                    </Layout>
-                                                </ProtectedRoute>
-                                            } />
-                                            <Route path="/simulator" element={
-                                                <ProtectedRoute>
-                                                    <Layout>
-                                                        <Simulator />
-                                                    </Layout>
-                                                </ProtectedRoute>
-                                            } />
-                                        </Routes>
-                                    </Suspense>
-                                    <FlowDock />
-                                </FlowProvider>
+
+                                <Suspense fallback={<PageLoader />}>
+                                    <Routes>
+                                        <Route path="/login" element={<Login />} />
+                                        <Route path="/" element={
+                                            <ProtectedRoute>
+                                                <Layout>
+                                                    <Dashboard />
+                                                </Layout>
+                                            </ProtectedRoute>
+                                        } />
+                                        <Route path="/schedule" element={
+                                            <ProtectedRoute>
+                                                <Layout>
+                                                    <Timetable />
+                                                </Layout>
+                                            </ProtectedRoute>
+                                        } />
+                                        <Route path="/attendance" element={
+                                            <ProtectedRoute>
+                                                <Layout>
+                                                    <Attendance />
+                                                </Layout>
+                                            </ProtectedRoute>
+                                        } />
+                                        <Route path="/profile" element={
+                                            <ProtectedRoute>
+                                                <Layout>
+                                                    <Profile />
+                                                </Layout>
+                                            </ProtectedRoute>
+                                        } />
+                                        <Route path="/developer" element={
+                                            <ProtectedRoute>
+                                                <Layout>
+                                                    <Developer />
+                                                </Layout>
+                                            </ProtectedRoute>
+                                        } />
+                                        <Route path="/notes" element={
+                                            <ProtectedRoute>
+                                                <Layout>
+                                                    <StickyNotes />
+                                                </Layout>
+                                            </ProtectedRoute>
+                                        } />
+                                        <Route path="/countdown" element={
+                                            <ProtectedRoute>
+                                                <Layout>
+                                                    <Countdown />
+                                                </Layout>
+                                            </ProtectedRoute>
+                                        } />
+                                        <Route path="/tasks" element={
+                                            <ProtectedRoute>
+                                                <Layout>
+                                                    <Tasks />
+                                                </Layout>
+                                            </ProtectedRoute>
+                                        } />
+                                        <Route path="/simulator" element={
+                                            <ProtectedRoute>
+                                                <Layout>
+                                                    <Simulator />
+                                                </Layout>
+                                            </ProtectedRoute>
+                                        } />
+                                    </Routes>
+                                </Suspense>
                             </GamificationProvider>
                         </ToastProvider>
                     </ThemeProvider>

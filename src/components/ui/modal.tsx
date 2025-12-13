@@ -1,6 +1,5 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
-import { Button } from './button';
 import { cn } from '../../lib/utils';
 
 interface ModalProps {
@@ -12,7 +11,6 @@ interface ModalProps {
 }
 
 export function Modal({ isOpen, onClose, title, children, className }: ModalProps) {
-    const modalRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const handleEscape = (e: KeyboardEvent) => {
@@ -35,19 +33,25 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
             <div
-                ref={modalRef}
                 className={cn(
-                    "relative w-full max-w-lg rounded-lg border bg-background p-6 shadow-lg animate-in fade-in zoom-in duration-200",
+                    "relative w-full bg-white/80 backdrop-blur-2xl rounded-[2rem] shadow-2xl overflow-hidden animate-scale-up border border-white/40",
                     className
-                )}
-            >
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-semibold">{title}</h2>
-                    <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
-                        <X className="h-4 w-4" />
-                    </Button>
+                )}>
+                {/* Header */}
+                <div className="flex items-center justify-between p-5 border-b border-white/20">
+                    <h2 className="text-xl font-bold text-slate-800 tracking-tight">{title}</h2>
+                    <button
+                        onClick={onClose}
+                        className="p-2 hover:bg-white/50 rounded-full transition-colors text-slate-500 hover:text-slate-900"
+                    >
+                        <X className="h-5 w-5" />
+                    </button>
                 </div>
-                {children}
+
+                {/* Content */}
+                <div className="p-5 max-h-[80vh] overflow-y-auto custom-scrollbar">
+                    {children}
+                </div>
             </div>
         </div>
     );

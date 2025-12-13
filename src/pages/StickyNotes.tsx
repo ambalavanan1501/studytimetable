@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Upload, FileJson, FileText } from 'lucide-react';
+import { Plus, Trash2, Upload, FileJson, FileText } from 'lucide-react';
 import { db } from '../lib/db';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -13,7 +12,6 @@ interface Note {
 }
 
 export function StickyNotes() {
-    const navigate = useNavigate();
     const [notes, setNotes] = useState<Note[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -119,73 +117,89 @@ export function StickyNotes() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 p-6 pb-24">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="p-2 bg-white rounded-full shadow-sm hover:bg-slate-100 transition-colors"
-                    >
-                        <ArrowLeft className="h-6 w-6 text-slate-600" />
-                    </button>
-                    <h1 className="text-2xl font-bold text-slate-800">Sticky Notes</h1>
+        <div className="min-h-screen p-2 md:p-6 pb-24 space-y-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div>
+                    <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">Sticky Notes</h1>
+                    <p className="text-slate-400 font-medium md:-mt-1 text-sm">Capture your thougths instantly.</p>
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
                     <button
                         onClick={exportJSON}
-                        className="flex items-center gap-2 bg-white text-slate-600 px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors shadow-sm text-sm font-medium"
+                        className="flex items-center gap-2 bg-white text-slate-600 px-4 py-2.5 rounded-xl hover:bg-slate-50 hover:text-primary-600 transition-all shadow-sm border border-slate-100 font-bold text-sm group"
                         title="Export JSON"
                     >
-                        <FileJson className="h-4 w-4" />
+                        <FileJson className="h-4 w-4 group-hover:scale-110 transition-transform" />
                         <span className="hidden sm:inline">JSON</span>
                     </button>
                     <button
                         onClick={exportPDF}
-                        className="flex items-center gap-2 bg-white text-slate-600 px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors shadow-sm text-sm font-medium"
+                        className="flex items-center gap-2 bg-white text-slate-600 px-4 py-2.5 rounded-xl hover:bg-slate-50 hover:text-primary-600 transition-all shadow-sm border border-slate-100 font-bold text-sm group"
                         title="Export PDF"
                     >
-                        <FileText className="h-4 w-4" />
+                        <FileText className="h-4 w-4 group-hover:scale-110 transition-transform" />
                         <span className="hidden sm:inline">PDF</span>
                     </button>
-                    <label className="flex items-center gap-2 bg-white text-slate-600 px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors shadow-sm text-sm font-medium cursor-pointer">
-                        <Upload className="h-4 w-4" />
+                    <label className="flex items-center gap-2 bg-white text-slate-600 px-4 py-2.5 rounded-xl hover:bg-slate-50 hover:text-primary-600 transition-all shadow-sm border border-slate-100 font-bold text-sm cursor-pointer group">
+                        <Upload className="h-4 w-4 group-hover:scale-110 transition-transform" />
                         <span className="hidden sm:inline">Import</span>
                         <input type="file" accept=".json" onChange={importJSON} className="hidden" />
                     </label>
                     <button
                         onClick={handleAddNote}
-                        className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-full hover:bg-primary-700 transition-colors shadow-md ml-2"
+                        className="flex items-center gap-2 bg-slate-800 text-white px-6 py-2.5 rounded-xl hover:bg-slate-900 transition-all shadow-lg shadow-slate-300 ml-2 hover:translate-y-[-2px] active:scale-95"
                     >
                         <Plus className="h-5 w-5" />
-                        <span>New Note</span>
+                        <span className="font-bold">New Note</span>
                     </button>
                 </div>
             </div>
 
             {loading ? (
-                <div className="text-center py-10 text-slate-500">Loading notes...</div>
+                <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500 mb-4"></div>
+                    <p className="font-medium animate-pulse">Loading notes...</p>
+                </div>
             ) : notes.length === 0 ? (
-                <div className="text-center py-20 text-slate-400">
-                    <p>No notes yet. Create one to get started!</p>
+                <div className="flex flex-col items-center justify-center py-32 text-center">
+                    <div className="w-24 h-24 bg-yellow-50 rounded-[2rem] flex items-center justify-center mb-6 shadow-inner ring-1 ring-yellow-100">
+                        <FileText className="h-10 w-10 text-yellow-500 opacity-50" />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-700">Your mind is clear</h3>
+                    <p className="text-slate-400 font-medium mb-8 max-w-xs mx-auto">Create a note to remember ideas, tasks, or important info.</p>
+                    <button
+                        onClick={handleAddNote}
+                        className="text-primary-600 font-bold hover:bg-primary-50 px-6 py-2.5 rounded-full transition-colors flex items-center gap-2"
+                    >
+                        <Plus className="h-4 w-4" />
+                        Create first note
+                    </button>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-[200px]">
                     {notes.map(note => (
-                        <div key={note.id} className="glass-card p-4 rounded-2xl flex flex-col h-64 relative group transition-all hover:shadow-lg bg-yellow-50/50 border-yellow-100">
+                        <div
+                            key={note.id}
+                            className="glass-card p-4 rounded-[1.5rem] flex flex-col relative group transition-all duration-300 hover:shadow-xl hover:-translate-y-1 bg-gradient-to-br from-white/90 to-white/50 backdrop-blur-xl border border-white/60"
+                        >
+                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-yellow-300 to-yellow-100 opacity-50 group-hover:opacity-100 transition-opacity" />
+
                             <textarea
                                 value={note.content}
                                 onChange={(e) => handleUpdateNote(note.id, e.target.value)}
                                 placeholder="Type your note here..."
-                                className="flex-1 bg-transparent border-none resize-none focus:ring-0 text-slate-700 placeholder:text-slate-400 p-0 text-lg leading-relaxed"
+                                className="flex-1 bg-transparent border-none resize-none focus:ring-0 text-slate-700 placeholder:text-slate-300 p-0 text-lg font-medium leading-relaxed selection:bg-yellow-100 selection:text-yellow-700"
+                                spellCheck={false}
                             />
-                            <div className="flex justify-between items-center mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <span className="text-xs text-slate-400">
-                                    {note.updatedAt.toLocaleDateString()}
+                            <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-50">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-2 py-1 rounded-lg">
+                                    {note.updatedAt.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                                 </span>
                                 <button
                                     onClick={() => handleDeleteNote(note.id)}
-                                    className="p-2 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-full transition-colors"
+                                    className="p-2 hover:bg-red-50 text-slate-300 hover:text-red-500 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                                    title="Delete Note"
                                 >
                                     <Trash2 className="h-4 w-4" />
                                 </button>

@@ -31,7 +31,7 @@ export function AddSubjectModal({ isOpen, onClose, onSuccess, initialData }: Add
 
 function ModalContent({ onClose, onSuccess, initialData }: AddSubjectModalProps) {
     const [name, setName] = useState(initialData?.name || '');
-    const [credits, setCredits] = useState<number>(initialData?.credits || 3);
+    const [credits, setCredits] = useState<string>(initialData?.credits?.toString() || '3');
     const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -39,9 +39,10 @@ function ModalContent({ onClose, onSuccess, initialData }: AddSubjectModalProps)
         setLoading(true);
         try {
             if (!name.trim()) return;
-            if (credits < 0) return;
+            const parsedCredits = parseFloat(credits);
+            if (isNaN(parsedCredits) || parsedCredits < 0) return;
 
-            onSuccess({ name, credits });
+            onSuccess({ name, credits: parsedCredits });
             onClose();
         } catch (error) {
             console.error('Error saving subject:', error);
@@ -82,8 +83,9 @@ function ModalContent({ onClose, onSuccess, initialData }: AddSubjectModalProps)
                             <input
                                 type="number"
                                 value={credits}
-                                onChange={e => setCredits(parseInt(e.target.value) || 0)}
-                                min="1"
+                                onChange={e => setCredits(e.target.value)}
+                                min="0.5"
+                                step="0.5"
                                 max="10"
                                 className="w-full p-3 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-primary-500 transition-all font-medium"
                                 required

@@ -4,148 +4,59 @@
 
 @layer base {
   :root {
-    /* Default CSS Variables for Light Mode */
+    /* NikiOS Theme Tokens */
     --background: 210 40% 98%;
-    /* Slate-50 equivalent */
     --foreground: 222 47% 11%;
-    /* Slate-900 equivalent */
+
+    /* Glass Tokens */
+    --glass-border: 255 255 255;
+    --glass-surface: 255 255 255;
+
+    /* Aurora Gradient Colors */
+    --aurora-1: 238 100% 96%;
+    /* Soft Indigo */
+    --aurora-2: 220 100% 96%;
+    /* Soft Blue */
+    --aurora-3: 280 100% 96%;
+    /* Soft Purple */
+    --aurora-4: 180 100% 96%;
+    /* Soft Cyan */
 
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
-
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-
     --primary: 256 60% 58%;
-    /* Purple-500 matches default theme */
-    --primary-foreground: 210 40% 98%;
-
+    --primary-foreground: 0 0% 100%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222 47% 11.2%;
-
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-
     --accent: 210 40% 96.1%;
     --accent-foreground: 222 47% 11.2%;
-
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 256 60% 58%;
+    --radius: 1.5rem;
+    /* Hyper-rounded squircles */
 
-    --radius: 0.5rem;
-
-    /* Theme Specific Colors (Light Mode Defaults) */
-    --primary-50: 250 60% 98%;
-    --primary-100: 251 58% 94%;
+    /* Extended Palette */
+    --primary-50: 250 60% 99%;
+    --primary-100: 251 58% 95%;
     --primary-200: 250 56% 90%;
     --primary-300: 250 54% 82%;
     --primary-400: 252 56% 70%;
     --primary-500: 256 60% 58%;
     --primary-600: 260 60% 50%;
     --primary-700: 262 62% 42%;
-    --primary-800: 262 60% 34%;
-    --primary-900: 262 56% 28%;
-    --primary-950: 264 64% 16%;
   }
 
-  /* Dark Mode Overrides */
   .dark {
-    --background: 222 47% 11%;
-    /* Slate-950 */
-    --foreground: 210 40% 98%;
-    /* Slate-50 */
-
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 256 60% 58%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 256 60% 58%;
-  }
-
-  /* Dynamic Theme Overrides (Applied via data-theme attribute) */
-  /* Purple is default, already defined above */
-
-  [data-theme='blue'] {
-    --primary-50: 210 100% 98%;
-    --primary-100: 210 100% 94%;
-    --primary-200: 210 100% 88%;
-    --primary-300: 210 100% 80%;
-    --primary-400: 210 100% 68%;
-    --primary-500: 217 91% 60%;
-    --primary-600: 221 83% 53%;
-    --primary-700: 224 76% 48%;
-    --primary-800: 226 71% 40%;
-    --primary-900: 224 64% 33%;
-    --primary-950: 226 57% 21%;
-    --ring: 217 91% 60%;
-  }
-
-  [data-theme='green'] {
-    --primary-50: 138 76% 97%;
-    --primary-100: 141 84% 93%;
-    --primary-200: 141 78% 86%;
-    --primary-300: 142 72% 75%;
-    --primary-400: 145 63% 60%;
-    --primary-500: 142 71% 45%;
-    --primary-600: 142 76% 36%;
-    --primary-700: 142 72% 29%;
-    --primary-800: 143 64% 24%;
-    --primary-900: 145 61% 20%;
-    --primary-950: 144 61% 11%;
-    --ring: 142 71% 45%;
-  }
-
-  [data-theme='orange'] {
-    --primary-50: 25 100% 97%;
-    --primary-100: 30 100% 94%;
-    --primary-200: 32 100% 88%;
-    --primary-300: 34 100% 80%;
-    --primary-400: 32 100% 68%;
-    --primary-500: 27 96% 61%;
-    --primary-600: 25 95% 53%;
-    --primary-700: 22 89% 45%;
-    --primary-800: 18 80% 38%;
-    --primary-900: 15 76% 32%;
-    --primary-950: 13 80% 17%;
-    --ring: 27 96% 61%;
-  }
-
-  [data-theme='pink'] {
-    --primary-50: 325 70% 98%;
-    --primary-100: 327 73% 95%;
-    --primary-200: 328 75% 90%;
-    --primary-300: 329 77% 82%;
-    --primary-400: 332 79% 70%;
-    --primary-500: 336 80% 58%;
-    --primary-600: 339 76% 49%;
-    --primary-700: 341 78% 40%;
-    --primary-800: 343 78% 34%;
-    --primary-900: 344 75% 29%;
-    --primary-950: 346 80% 15%;
-    --ring: 336 80% 58%;
+    /* Enforce Light Mode Variables even in dark */
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
   }
 }
 
@@ -155,69 +66,68 @@
   }
 
   body {
-    @apply bg-background text-foreground transition-colors duration-300;
+    @apply bg-background text-foreground transition-all duration-500 antialiased selection:bg-primary-100 selection:text-primary-900;
+    /* Aurora Background Layer */
+    background-image:
+      radial-gradient(at 0% 0%, hsl(var(--aurora-1)) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, hsl(var(--aurora-2)) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, hsl(var(--aurora-3)) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, hsl(var(--aurora-4)) 0px, transparent 50%);
+    background-attachment: fixed;
+    background-size: 200% 200%;
+    animation: aurora 20s ease infinite alternate;
   }
-}
-
-/* Liquid Glass Background Animation */
-@keyframes blob {
-  0% {
-    transform: translate(0px, 0px) scale(1);
-  }
-
-  33% {
-    transform: translate(30px, -50px) scale(1.1);
-  }
-
-  66% {
-    transform: translate(-20px, 20px) scale(0.9);
-  }
-
-  100% {
-    transform: translate(0px, 0px) scale(1);
-  }
-}
-
-.animate-blob {
-  animation: blob 7s infinite;
-}
-
-.animation-delay-2000 {
-  animation-delay: 2s;
-}
-
-.animation-delay-4000 {
-  animation-delay: 4s;
-}
-
-/* Glass Utilities - Updated for Dark Mode */
-.glass {
-  @apply bg-white/10 dark:bg-black/20 backdrop-blur-lg border border-white/20 dark:border-white/10 shadow-xl transition-all duration-300;
-}
-
-.glass-card {
-  @apply bg-white/70 dark:bg-black/40 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-lg transition-all duration-300;
-}
-
-.glass-nav {
-  @apply bg-white/80 dark:bg-black/80 backdrop-blur-xl border-t border-white/40 dark:border-white/10 shadow-2xl transition-all duration-300;
-}
-
-.glass-card-premium {
-  @apply bg-white/60 dark:bg-black/30 backdrop-blur-xl border border-white/40 dark:border-white/10 shadow-xl transition-all duration-300;
-}
-
-/* Scrollbar hiding */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
 }
 
 /* Animations */
+@keyframes aurora {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 50% 100%;
+  }
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes breathe {
+
+  0%,
+  100% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-breathe {
+  animation: breathe 4s ease-in-out infinite;
+}
+
 @keyframes fade-in-up {
   0% {
     opacity: 0;
@@ -231,5 +141,45 @@
 }
 
 .animate-fade-in-up {
-  animation: fade-in-up 0.5s ease-out forwards;
+  animation: fade-in-up 0.6s ease-out forwards;
+}
+
+/* NikiOS Glass Utilities */
+.glass-vision {
+  @apply bg-white/40 backdrop-blur-[40px] border border-white/40;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.04);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.1) 100%);
+}
+
+.glass-panel {
+  @apply bg-white/60 backdrop-blur-3xl border border-white/50 shadow-sm transition-all duration-500 hover:shadow-md;
+}
+
+.glass-button {
+  @apply bg-white/50 backdrop-blur-xl border border-white/40 shadow-sm hover:bg-white/80 active:scale-95 transition-all duration-300;
+}
+
+/* Typography Enhancements */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  @apply tracking-tight text-slate-800;
+  font-feature-settings: "ss01", "ss02", "cv01";
+}
+
+.display-text {
+  @apply text-4xl md:text-5xl font-semibold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-slate-800 to-slate-500;
+}
+
+/* Hide Scrollbar */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

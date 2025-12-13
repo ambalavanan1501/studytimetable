@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { db } from '../lib/db';
 import { useGamification } from '../context/GamificationContext';
 import { useToast } from '../context/ToastContext';
@@ -7,9 +6,8 @@ import { SEO } from '../components/SEO';
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, TouchSensor, closestCorners, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { ArrowLeft, Plus, Trash2, GripVertical, CheckCircle2, Clock, Circle, Headphones } from 'lucide-react';
+import { Plus, Trash2, GripVertical, CheckCircle2, Clock, Circle } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { useFlow } from '../context/FlowContext'; // Assuming you have this utility
 
 interface Task {
     id: string;
@@ -28,7 +26,6 @@ const COLUMNS: { id: ColumnId; title: string; color: string; icon: any }[] = [
 ];
 
 export function Tasks() {
-    const navigate = useNavigate();
     const { addXP } = useGamification();
     const { addToast } = useToast();
 
@@ -145,35 +142,27 @@ export function Tasks() {
     };
 
     return (
-        <div className="min-h-screen p-6 pb-24 space-y-6">
+        <div className="min-h-screen p-2 md:p-6 pb-24 space-y-6">
             <SEO title="Kanban Board" description="Manage your tasks efficiently." />
 
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="p-2 bg-white rounded-full shadow-sm hover:bg-slate-100 transition-colors"
-                    >
-                        <ArrowLeft className="h-6 w-6 text-slate-600" />
-                    </button>
-                    <div>
-                        <h1 className="text-2xl font-bold text-slate-800">Task Board</h1>
-                        <p className="text-slate-500 text-xs">Drag and drop to manage workflow</p>
-                    </div>
+                <div>
+                    <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">Assignments</h1>
+                    <p className="text-slate-400 font-medium md:-mt-1 text-sm">Drag and drop to manage your workload.</p>
                 </div>
 
-                <form onSubmit={handleAddTask} className="flex gap-2">
+                <form onSubmit={handleAddTask} className="flex gap-2 w-full md:w-auto mt-4 md:mt-0">
                     <input
                         type="text"
                         value={newTask}
                         onChange={e => setNewTask(e.target.value)}
-                        placeholder="Add new task..."
-                        className="glass-input px-4 py-2 rounded-xl focus:ring-2 focus:ring-primary-500 w-full md:w-64"
+                        placeholder="Add new assignment..."
+                        className="glass-input px-5 py-3 rounded-2xl focus:ring-2 focus:ring-primary-500 w-full md:w-80 shadow-sm border-white/60 bg-white/70 backdrop-blur-md"
                     />
                     <button
                         type="submit"
                         disabled={!newTask.trim()}
-                        className="bg-primary-600 text-white p-2 rounded-xl hover:bg-primary-700 transition-colors disabled:opacity-50"
+                        className="bg-slate-800 text-white p-3 rounded-2xl hover:bg-slate-900 transition-all disabled:opacity-50 hover:scale-105 active:scale-95 shadow-lg shadow-slate-300"
                     >
                         <Plus className="h-6 w-6" />
                     </button>
@@ -186,7 +175,7 @@ export function Tasks() {
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
             >
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full items-start">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full items-start mt-6">
                     {COLUMNS.map(col => (
                         <Column
                             key={col.id}
@@ -217,11 +206,17 @@ function Column({ column, tasks, onDelete, onUpdateStatus }: { column: any, task
     return (
         <div
             ref={setNodeRef}
-            className={cn("bg-slate-50/50 rounded-2xl p-4 min-h-[500px] border-2 border-dashed border-slate-200 transition-colors", column.color)}
+            className={cn(
+                "rounded-[1.5rem] p-3 min-h-[500px] border border-white/40 transition-all duration-300",
+                column.color // This should now be background helper classes
+            )}
         >
-            <div className="flex items-center gap-2 mb-4 text-slate-500 font-bold uppercase text-xs tracking-wider">
+            <div className="flex items-center gap-2 mb-6 text-slate-600 font-bold uppercase text-xs tracking-widest pl-2">
                 <column.icon className="h-4 w-4" />
-                {column.title} <span className="bg-white/50 px-2 py-0.5 rounded-full text-[10px] ml-auto">{tasks.length}</span>
+                {column.title}
+                <span className="bg-white/60 px-2.5 py-0.5 rounded-full text-[10px] ml-auto font-extrabold shadow-sm text-slate-500">
+                    {tasks.length}
+                </span>
             </div>
 
             <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
@@ -230,8 +225,8 @@ function Column({ column, tasks, onDelete, onUpdateStatus }: { column: any, task
                         <SortableTask key={task.id} task={task} onDelete={onDelete} onUpdateStatus={onUpdateStatus} />
                     ))}
                     {tasks.length === 0 && (
-                        <div className="h-24 flex items-center justify-center text-slate-300 text-xs italic">
-                            Empty
+                        <div className="h-32 flex flex-col items-center justify-center text-slate-400/50 text-xs font-bold uppercase tracking-wider border-2 border-dashed border-slate-200/50 rounded-2xl">
+                            <span>Drop Here</span>
                         </div>
                     )}
                 </div>
@@ -255,57 +250,61 @@ function SortableTask({ task, onDelete, onUpdateStatus }: { task: Task, onDelete
     };
 
     return (
-        <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+        <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="touch-none sensitive-touch">
             <TaskCard task={task} onDelete={onDelete} onUpdateStatus={onUpdateStatus} isDragging={isDragging} />
         </div>
     );
 }
 
-function TaskCard({ task, onDelete, onUpdateStatus, isDragging, isOverlay }: { task: Task, onDelete: (id: string) => void, onUpdateStatus: (id: string, status: ColumnId) => void, isDragging?: boolean, isOverlay?: boolean }) {
-    const { startFocus } = useFlow();
+function TaskCard({ task, onDelete, isDragging, isOverlay }: { task: Task, onDelete: (id: string) => void, onUpdateStatus?: (id: string, status: ColumnId) => void, isDragging?: boolean, isOverlay?: boolean }) {
 
-    const handleFocus = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        startFocus(25, task.text);
-        if (task.status !== 'in-progress' && task.status !== 'done') {
-            onUpdateStatus(task.id, 'in-progress');
-        }
-    };
 
     return (
         <div
             className={cn(
-                "glass-card p-4 rounded-xl flex items-start gap-3 group bg-white shadow-sm border border-slate-100",
-                isDragging && "opacity-30",
-                isOverlay && "rotate-2 scale-105 shadow-xl cursor-grabbing ring-2 ring-primary-500 ring-offset-2 z-50",
+                "glass-card p-4 rounded-xl flex items-start gap-3 group bg-white/80 hover:bg-white shadow-sm hover:shadow-md border border-white/60 transition-all duration-300 relative overflow-hidden",
+                isDragging && "opacity-40 scale-95",
+                isOverlay && "rotate-2 scale-105 shadow-2xl cursor-grabbing ring-4 ring-white/50 ring-offset-0 z-50 bg-white",
             )}
         >
-            <button className="mt-1 text-slate-300 cursor-grab active:cursor-grabbing">
+            <div className={cn(
+                "absolute left-0 top-0 bottom-0 w-1.5 transition-colors duration-300",
+                task.status === 'done' ? "bg-emerald-400" : task.status === 'in-progress' ? "bg-blue-400" : "bg-slate-200"
+            )} />
+
+            <button className="mt-1 text-slate-300 cursor-grab active:cursor-grabbing hover:text-slate-500 transition-colors hidden md:block">
                 <GripVertical className="h-4 w-4" />
             </button>
-            <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-700 break-words leading-relaxed">{task.text}</p>
-                <span className="text-[10px] text-slate-400 mt-2 block">
-                    {new Date(task.createdAt).toLocaleDateString()}
-                </span>
+
+            <div className="flex-1 min-w-0 pl-2">
+                <p className={cn(
+                    "text-sm font-bold text-slate-700 break-words leading-relaxed transition-all",
+                    task.status === 'done' && "text-slate-400 line-through decoration-slate-300"
+                )}>
+                    {task.text}
+                </p>
+                <div className="flex items-center gap-2 mt-3">
+                    <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
+                        {new Date(task.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    </span>
+                    {task.status === 'in-progress' && (
+                        <span className="text-[10px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100 flex items-center gap-1">
+                            <Clock className="w-3 h-3" /> In Progress
+                        </span>
+                    )}
+                </div>
             </div>
-            {task.status !== 'done' && (
+
+            <div className="flex flex-col gap-1 -mr-1">
+
                 <button
-                    onClick={handleFocus}
-                    className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-300 hover:text-emerald-500 hover:bg-emerald-50 rounded-lg transition-all"
-                    title="Start Deep Work Session"
+                    onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
+                    className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all opacity-0 group-hover:opacity-100 md:translate-x-2 group-hover:translate-x-0"
                     onPointerDown={(e) => e.stopPropagation()}
                 >
-                    <Headphones className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4" />
                 </button>
-            )}
-            <button
-                onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
-                className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                onPointerDown={(e) => e.stopPropagation()}
-            >
-                <Trash2 className="h-4 w-4" />
-            </button>
+            </div>
         </div>
     );
 }

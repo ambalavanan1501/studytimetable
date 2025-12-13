@@ -8,6 +8,7 @@ import { Plus, RotateCcw } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../lib/db';
+import { cn } from '../lib/utils';
 
 interface MockSubject {
     id: string;
@@ -168,36 +169,49 @@ export function Simulator() {
     };
 
     return (
-        <div className="pb-24 space-y-4 md:space-y-8">
+        <div className="pb-32 space-y-8 animate-fade-in-up md:px-4">
             <SEO
                 title="CGPA Simulator"
                 description="Predict your future grades with our interactive GPA calculator."
             />
 
-            <div className="flex flex-col gap-1">
-                <h1 className="text-2xl md:text-3xl font-bold text-slate-800">Simulator</h1>
-                <p className="text-slate-500 text-sm md:text-base">Play with grades to see your future.</p>
+            <div className="flex flex-col gap-2 mt-4 ml-2">
+                <h1 className="text-4xl md:text-5xl font-semibold text-slate-900 tracking-tighter leading-none">Simulator</h1>
+                <p className="text-lg text-slate-500 font-medium font-display tracking-wide">Predict your academic future.</p>
             </div>
 
-            <ResultCard
-                gpa={calculatedGpa}
-                totalCredits={totalCredits}
-                initialGpa={isCumulativeMode ? (existingCgpa || 0) : undefined}
-            />
+            <div className="glass-vision p-6 rounded-[2rem] shadow-2xl ring-1 ring-white/60 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-b from-white/20 to-transparent pointer-events-none"></div>
+                <ResultCard
+                    gpa={calculatedGpa}
+                    totalCredits={totalCredits}
+                    initialGpa={isCumulativeMode ? (existingCgpa || 0) : undefined}
+                />
+            </div>
 
-            {/* Mode Switcher */}
+            {/* Mode Switcher - Floating Glass */}
             {existingCgpa !== null && (
-                <div className="flex justify-center">
-                    <div className="bg-white/50 backdrop-blur-sm p-1 rounded-xl flex gap-1 border border-white/40 shadow-sm">
+                <div className="flex justify-center -mt-4 relative z-10">
+                    <div className="glass-panel p-2 rounded-full flex gap-1 shadow-lg backdrop-blur-3xl">
                         <button
                             onClick={() => setIsCumulativeMode(false)}
-                            className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-bold transition-all ${!isCumulativeMode ? 'bg-white shadow-sm text-primary-600' : 'text-slate-500 hover:text-slate-700'}`}
+                            className={cn(
+                                "px-6 py-2 rounded-full text-xs font-bold transition-all duration-300",
+                                !isCumulativeMode
+                                    ? "bg-slate-900 text-white shadow-lg scale-105"
+                                    : "text-slate-500 hover:text-slate-900 hover:bg-white/40"
+                            )}
                         >
                             Semester Only
                         </button>
                         <button
                             onClick={() => setIsCumulativeMode(true)}
-                            className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-bold transition-all ${isCumulativeMode ? 'bg-white shadow-sm text-primary-600' : 'text-slate-500 hover:text-slate-700'}`}
+                            className={cn(
+                                "px-6 py-2 rounded-full text-xs font-bold transition-all duration-300",
+                                isCumulativeMode
+                                    ? "bg-slate-900 text-white shadow-lg scale-105"
+                                    : "text-slate-500 hover:text-slate-900 hover:bg-white/40"
+                            )}
                         >
                             Cumulative Effect
                         </button>
@@ -205,33 +219,47 @@ export function Simulator() {
                 </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {subjects.map(subject => (
-                    <GradeSlider
-                        key={subject.id}
-                        subjectName={subject.name}
-                        credits={subject.credits}
-                        currentGrade={subject.grade}
-                        onChange={(g) => handleGradeChange(subject.id, g)}
-                        onDelete={() => removeSubject(subject.id)}
-                        onEdit={() => handleEditClick(subject)}
-                    />
+                    <div key={subject.id} className="glass-vision p-3 rounded-[1.5rem] hover:bg-white/50 transition-colors">
+                        <GradeSlider
+                            subjectName={subject.name}
+                            credits={subject.credits}
+                            currentGrade={subject.grade}
+                            onChange={(g) => handleGradeChange(subject.id, g)}
+                            onDelete={() => removeSubject(subject.id)}
+                            onEdit={() => handleEditClick(subject)}
+                        />
+                    </div>
                 ))}
+
+                {/* Empty State */}
+                {subjects.length === 0 && (
+                    <div className="col-span-1 md:col-span-2 py-16 glass-vision rounded-[2.5rem] flex flex-col items-center justify-center text-slate-400 gap-4 border-2 border-dashed border-white/20">
+                        <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center shadow-inner mb-2 animate-float">
+                            <Plus className="h-8 w-8 text-slate-300" />
+                        </div>
+                        <div className="text-center">
+                            <p className="font-bold text-xl text-slate-600">No subjects added yet</p>
+                            <p className="text-slate-400">Add subjects to start simulating</p>
+                        </div>
+                    </div>
+                )}
             </div>
 
-            <div className="flex justify-center gap-4 pt-4">
+            <div className="flex justify-center gap-4 pt-6 pb-12">
                 <button
                     onClick={openAddModal}
-                    className="flex items-center gap-2 bg-primary-600 text-white px-6 py-3 rounded-full font-bold shadow-lg shadow-primary-500/30 hover:bg-primary-700 transition-all active:scale-95 text-sm md:text-base"
+                    className="flex items-center gap-2 bg-slate-900 text-white px-8 py-3 rounded-full font-bold shadow-2xl shadow-slate-400/50 hover:scale-105 transition-all active:scale-95 group text-sm"
                 >
-                    <Plus className="h-5 w-5" />
+                    <Plus className="h-5 w-5 group-hover:rotate-90 transition-transform duration-300" />
                     Add Subject
                 </button>
                 <button
                     onClick={handleReset}
-                    className="flex items-center gap-2 bg-white text-slate-600 px-6 py-3 rounded-full font-bold shadow-sm hover:bg-slate-50 transition-all text-sm md:text-base"
+                    className="flex items-center gap-2 glass-button px-8 py-3 rounded-full font-bold text-slate-600 hover:text-red-500 text-sm"
                 >
-                    <RotateCcw className="h-5 w-5" />
+                    <RotateCcw className="h-4 w-4" />
                     Reset
                 </button>
             </div>

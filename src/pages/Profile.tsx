@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Settings, ChevronRight, Loader2, Palette, GraduationCap, Target, Trash2, Info, Download, FileText, Sparkles, RefreshCw, Moon, Sun, Trophy, Calendar } from 'lucide-react';
+import { LogOut, Settings, ChevronRight, Loader2, Palette, GraduationCap, Target, Trash2, Download, FileText, Sparkles, RefreshCw, Trophy, Calendar } from 'lucide-react';
 import { EditProfileModal } from '../components/profile/EditProfileModal';
 import { AppSettingsModal } from '../components/profile/AppSettingsModal';
 import { ManageCoursesModal } from '../components/profile/ManageCoursesModal';
@@ -38,7 +38,7 @@ const THEMES = [
 
 export function Profile() {
     const { user } = useAuth();
-    const { mode, setTheme, setMode } = useTheme();
+    const { setTheme } = useTheme();
     const { addToast } = useToast();
     const { level, xp } = useGamification();
     const navigate = useNavigate();
@@ -229,17 +229,30 @@ export function Profile() {
     }
 
     return (
-        <div className="p-6 space-y-8 pb-32">
+        <div className="pb-32 space-y-10 animate-fade-in-up md:px-4">
             <SEO
                 title="Profile"
                 description="Manage your profile settings and goals."
             />
-            <h1 className="text-2xl font-bold text-slate-800 mt-4">Profile</h1>
+            <div className="flex flex-col gap-2 mt-4 ml-2">
+                <h1 className="text-4xl md:text-5xl font-semibold text-slate-900 tracking-tighter leading-none">Profile</h1>
+                <p className="text-lg text-slate-500 font-medium font-display tracking-wide">Identity & Preferences.</p>
+            </div>
 
-            {/* User Card */}
-            <div className="glass-card rounded-3xl p-6 flex items-center gap-4">
-                <div className="relative group">
-                    <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-pink-500 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg overflow-hidden">
+            {/* NikiOS Profile Hero */}
+            <div className="glass-vision rounded-[2.5rem] p-8 flex flex-col items-center text-center relative overflow-hidden group shadow-2xl">
+                {/* Top Controls */}
+                <div className="absolute top-8 right-8 z-20">
+                    <button
+                        onClick={() => setIsEditModalOpen(true)}
+                        className="glass-button p-3 rounded-full text-slate-500 hover:text-slate-900 shadow-lg"
+                    >
+                        <Settings className="h-6 w-6" />
+                    </button>
+                </div>
+
+                <div className="relative z-10 mb-6 group-hover:scale-105 transition-transform duration-700">
+                    <div className="w-28 h-28 rounded-full flex items-center justify-center text-white text-4xl font-bold shadow-2xl ring-8 ring-white/30 overflow-hidden relative animate-breathe cursor-pointer">
                         {profile?.avatar_url ? (
                             <img
                                 src={profile.avatar_url}
@@ -247,168 +260,119 @@ export function Profile() {
                                 className="w-full h-full object-cover"
                             />
                         ) : (
-                            profile?.full_name ? profile.full_name[0].toUpperCase() : user?.email?.[0].toUpperCase()
+                            <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                                {profile?.full_name ? profile.full_name[0].toUpperCase() : user?.email?.[0].toUpperCase()}
+                            </div>
                         )}
+                        <label className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-all cursor-pointer backdrop-blur-[2px]">
+                            <span className="text-white text-xs font-bold uppercase tracking-wider">
+                                {uploading ? '...' : 'Change'}
+                            </span>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleImageUpload}
+                                disabled={uploading}
+                                className="hidden"
+                            />
+                        </label>
                     </div>
-                    <label className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                        <span className="text-white text-xs font-medium">
-                            {uploading ? '...' : 'Edit'}
-                        </span>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageUpload}
-                            disabled={uploading}
-                            className="hidden"
-                        />
-                    </label>
+                    {(profile?.university || profile?.branch) && (
+                        <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 glass-panel px-4 py-1.5 rounded-full shadow-lg border border-white/60 flex items-center gap-2 whitespace-nowrap">
+                            <GraduationCap className="h-4 w-4 text-indigo-500" />
+                            <span className="text-sm font-bold text-slate-800">{profile.branch || 'Student'}</span>
+                        </div>
+                    )}
                 </div>
-                <div className="overflow-hidden flex-1">
-                    <h2 className="text-lg font-bold text-slate-800 truncate">
+
+                <div className="relative z-10 mt-6 space-y-1">
+                    <h2 className="text-3xl font-bold text-slate-900 tracking-tight">
                         {profile?.full_name || 'Student'}
                     </h2>
-                    <p className="text-sm text-slate-500 truncate">{user?.email}</p>
-                    {(profile?.university || profile?.branch) && (
-                        <div className="flex items-center gap-2 mt-1 text-xs text-slate-400">
-                            <GraduationCap className="h-3 w-3" />
-                            <span className="truncate">
-                                {profile.university} {profile.branch && `• ${profile.branch}`} {profile.semester && `• ${profile.semester}`}
-                            </span>
-                        </div>
-                    )}
-                    {(profile?.cgpa || profile?.credits) && (
-                        <div className="flex items-center gap-3 mt-2 text-xs font-medium">
-                            {profile.cgpa > 0 && (
-                                <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-md">
-                                    CGPA: {profile.cgpa}
-                                </span>
-                            )}
-                            {profile.credits > 0 && (
-                                <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md">
-                                    Credits: {profile.credits}
-                                </span>
-                            )}
-                        </div>
-                    )}
-                    <div className="flex items-center gap-2 mt-3 p-1.5 bg-yellow-50/80 rounded-lg w-fit">
-                        <Trophy className="h-3 w-3 text-yellow-600" />
-                        <span className="text-xs font-bold text-yellow-700">Lvl {level} Scholar</span>
-                        <div className="h-2 w-px bg-yellow-200 mx-1"></div>
-                        <span className="text-xs text-yellow-600">{xp} XP</span>
-                    </div>
+                    <p className="text-lg text-slate-500 font-medium">{user?.email}</p>
                 </div>
-                <button
-                    onClick={() => setIsEditModalOpen(true)}
-                    className="p-2 bg-white/50 rounded-full hover:bg-white transition-colors"
-                >
-                    <Settings className="h-5 w-5 text-slate-600" />
-                </button>
+
+                {/* Level Pills */}
+                <div className="flex items-center justify-center gap-4 mt-8">
+                    <div className="glass-panel px-5 py-2 rounded-2xl flex items-center gap-2 text-indigo-700 bg-indigo-50/50 border-indigo-100/50">
+                        <Trophy className="h-5 w-5 text-indigo-500" />
+                        <span className="font-bold">Lvl {level}</span>
+                        <span className="w-1 h-1 bg-indigo-300 rounded-full"></span>
+                        <span className="font-bold">{xp} XP</span>
+                    </div>
+                    {profile?.cgpa && profile.cgpa > 0 && (
+                        <div className="glass-panel px-5 py-2 rounded-2xl text-emerald-700 font-bold bg-emerald-50/50 border-emerald-100/50">
+                            CGPA {profile.cgpa}
+                        </div>
+                    )}
+                </div>
             </div>
 
-            {/* AI Quote Section */}
-            <div className="space-y-3">
-                <div className="flex items-center justify-between ml-2">
-                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Daily Inspiration</h3>
-                    <button
-                        onClick={loadQuote}
-                        disabled={isQuoteLoading}
-                        className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-primary-600 transition-colors disabled:opacity-50"
-                    >
-                        <RefreshCw className={cn("h-4 w-4", isQuoteLoading && "animate-spin")} />
-                    </button>
+            {/* AI Quote - Minimal */}
+            <div className="glass-vision p-6 rounded-[2rem] relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity duration-500">
+                    <Sparkles className="h-40 w-40 text-slate-900 rotate-12" />
                 </div>
-                <div className="glass-card rounded-3xl p-6 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                        <Sparkles className="h-24 w-24 text-primary-500" />
+                <div className="relative z-10">
+                    <div className="flex justify-between items-start mb-4">
+                        <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                            Daily Inspiration
+                        </h3>
+                        <button onClick={loadQuote} className="glass-button p-2 rounded-full"><RefreshCw className={cn("h-4 w-4", isQuoteLoading && "animate-spin")} /></button>
                     </div>
-
                     {isQuoteLoading && !quote ? (
-                        <div className="flex flex-col gap-2 animate-pulse">
-                            <div className="h-4 bg-slate-200 rounded w-3/4"></div>
-                            <div className="h-4 bg-slate-200 rounded w-1/2"></div>
-                            <div className="h-3 bg-slate-200 rounded w-1/4 mt-2 ml-auto"></div>
+                        <div className="animate-pulse space-y-2">
+                            <div className="h-6 bg-slate-200 rounded-full w-2/3"></div>
+                            <div className="h-4 bg-slate-200 rounded-full w-1/3"></div>
                         </div>
                     ) : (
-                        <div className="relative z-10">
-                            <p className="text-lg font-medium text-slate-700 italic leading-relaxed">
+                        <div className="md:pr-20">
+                            <p className="text-3xl md:text-4xl font-serif italic text-slate-800 leading-tight">
                                 "{quote?.quote || "Believe you can and you're halfway there."}"
                             </p>
-                            <p className="text-sm text-primary-600 font-semibold mt-3 text-right">
-                                — {quote?.author || "Theodore Roosevelt"}
-                            </p>
+                            <p className="text-slate-500 font-bold mt-4 uppercase tracking-widest text-sm">— {quote?.author || "Theodore Roosevelt"}</p>
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* Appearance Section */}
-            <div className="space-y-3">
-                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider ml-2">Appearance</h3>
-                <div className="glass-card rounded-3xl p-5 space-y-4">
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-600">
-                            <Palette className="h-4 w-4" />
+            {/* Settings Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Appearance */}
+                <div className="glass-vision p-6 rounded-[2rem]">
+                    <div className="flex items-center gap-4 mb-6">
+                        <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-sm"><Palette className="h-6 w-6" /></div>
+                        <div>
+                            <span className="block text-xl font-bold text-slate-900">Theme</span>
+                            <span className="text-slate-500 text-sm">Personalize accent</span>
                         </div>
-                        <span className="font-medium text-slate-700">Accent Color</span>
                     </div>
-                    <div className="flex justify-between gap-2">
+                    <div className="flex gap-3">
                         {THEMES.map((theme) => (
                             <button
                                 key={theme.value}
                                 onClick={() => handleThemeChange(theme.value)}
                                 className={cn(
-                                    "w-10 h-10 rounded-full transition-all flex items-center justify-center",
+                                    "w-12 h-12 rounded-full transition-all duration-300 flex items-center justify-center shadow-sm hover:scale-110",
                                     theme.class,
-                                    profile?.accent_color === theme.value ? "ring-4 ring-white shadow-lg scale-110" : "opacity-70 hover:opacity-100"
+                                    profile?.accent_color === theme.value ? "ring-[6px] ring-white shadow-xl scale-110" : "opacity-60"
                                 )}
-                                title={theme.name}
                             />
                         ))}
                     </div>
                 </div>
-            </div>
 
-            {/* Dark Mode Toggle */}
-            <div className="space-y-3">
-                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider ml-2">Display Mode</h3>
-                <div className="glass-card rounded-3xl p-5 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className={cn(
-                            "w-8 h-8 rounded-full flex items-center justify-center transition-colors",
-                            mode === 'dark' ? "bg-slate-700 text-slate-300" : "bg-orange-100 text-orange-500"
-                        )}>
-                            {mode === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-                        </div>
-                        <span className="font-medium text-slate-700 dark:text-slate-200">Dark Mode</span>
-                    </div>
-
-                    <button
-                        onClick={() => setMode(mode === 'light' ? 'dark' : 'light')}
-                        className={cn(
-                            "w-14 h-8 rounded-full transition-colors relative",
-                            mode === 'dark' ? "bg-primary-600" : "bg-slate-200"
-                        )}
-                    >
-                        <div className={cn(
-                            "absolute top-1 left-1 bg-white w-6 h-6 rounded-full shadow-sm transition-transform duration-300",
-                            mode === 'dark' ? "translate-x-6" : "translate-x-0"
-                        )} />
-                    </button>
-                </div>
-            </div>
-
-            {/* Goals Section */}
-            <div className="space-y-3">
-                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider ml-2">Goals</h3>
-                <div className="glass-card rounded-3xl p-5">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
-                                <Target className="h-4 w-4" />
+                {/* Goals */}
+                <div className="glass-vision p-6 rounded-[2rem]">
+                    <div className="flex items-center gap-4 mb-6 justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm"><Target className="h-6 w-6" /></div>
+                            <div>
+                                <span className="block text-xl font-bold text-slate-900">Goal</span>
+                                <span className="text-slate-500 text-sm">Attendance Target</span>
                             </div>
-                            <span className="font-medium text-slate-700">Attendance Goal</span>
                         </div>
-                        <span className="font-bold text-primary-600">{profile?.attendance_goal}%</span>
+                        <span className="text-3xl font-black text-emerald-500">{profile?.attendance_goal}%</span>
                     </div>
                     <input
                         type="range"
@@ -416,130 +380,59 @@ export function Profile() {
                         max="100"
                         value={profile?.attendance_goal || 75}
                         onChange={handleAttendanceGoalChange}
-                        className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-primary-600"
+                        className="w-full h-3 bg-slate-100 rounded-full appearance-none cursor-pointer accent-emerald-500 hover:accent-emerald-400 transition-all"
                     />
-                    <div className="flex justify-between text-xs text-slate-400 mt-2">
-                        <span>0%</span>
-                        <span>50%</span>
-                        <span>100%</span>
-                    </div>
                 </div>
             </div>
 
-            {/* Settings List */}
-            <div className="space-y-3">
-                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider ml-2">Preferences</h3>
-                <div className="glass-card rounded-3xl overflow-hidden">
-                    <div className="divide-y divide-slate-100">
-
-
+            {/* Actions List */}
+            <div className="space-y-4">
+                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest ml-4">Quick Actions</h3>
+                <div className="glass-vision p-2 rounded-[2.5rem] grid gap-2">
+                    {[
+                        { icon: Calendar, label: "Manage Timetable", sub: "Add or edit classes", action: () => setIsManageCoursesModalOpen(true), color: "purple" },
+                        { icon: FileText, label: "Export Report", sub: "Download PDF summary", action: handleExportPDF, color: "blue" },
+                        { icon: Download, label: "Backup Data", sub: "Save as JSON", action: handleExportJSON, color: "sky" },
+                        { icon: Trash2, label: "Reset All Data", sub: "Clear database", action: handleResetData, color: "red" }
+                    ].map((item, i) => (
                         <button
-                            onClick={() => setIsSettingsModalOpen(true)}
-                            className="w-full p-4 flex items-center justify-between hover:bg-white/40 transition-colors"
+                            key={i}
+                            onClick={item.action}
+                            className="w-full p-6 flex items-center justify-between hover:bg-white/50 rounded-[2rem] transition-all group"
                         >
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600">
-                                    <Settings className="h-4 w-4" />
+                            <div className="flex items-center gap-6">
+                                <div className={cn(
+                                    "w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform group-hover:scale-110",
+                                    `bg-${item.color}-500`
+                                )}>
+                                    {item.label === 'Export Report' && exporting ? <Loader2 className="h-6 w-6 animate-spin" /> : <item.icon className="h-6 w-6" />}
                                 </div>
-                                <span className="font-medium text-slate-700">App Settings</span>
+                                <div className="text-left">
+                                    <span className="block text-lg font-bold text-slate-800">{item.label}</span>
+                                    <span className="text-slate-500 font-medium">{item.sub}</span>
+                                </div>
                             </div>
-                            <ChevronRight className="h-4 w-4 text-slate-400" />
+                            <ChevronRight className="h-6 w-6 text-slate-300 group-hover:text-slate-900 transition-colors" />
                         </button>
-                    </div>
+                    ))}
                 </div>
             </div>
 
-            {/* Danger Zone */}
-            <div className="space-y-3">
-                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider ml-2">Data Management</h3>
-                <div className="glass-card rounded-3xl overflow-hidden p-2 space-y-2">
-                    <button
-                        onClick={handleExportPDF}
-                        disabled={exporting}
-                        className="w-full p-4 flex items-center justify-between hover:bg-white/40 rounded-2xl transition-colors group"
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 group-hover:bg-blue-200 transition-colors">
-                                {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
-                            </div>
-                            <span className="font-medium text-slate-700">Export Report (PDF)</span>
-                        </div>
-                    </button>
-
-                    <button
-                        onClick={() => setIsManageCoursesModalOpen(true)}
-                        className="w-full p-4 flex items-center justify-between hover:bg-white/40 rounded-2xl transition-colors group"
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 group-hover:bg-purple-200 transition-colors">
-                                <Calendar className="h-4 w-4" />
-                            </div>
-                            <span className="font-medium text-slate-700">Manage Timetable</span>
-                        </div>
-                    </button>
-
-                    <button
-                        onClick={handleExportJSON}
-                        disabled={exporting}
-                        className="w-full p-4 flex items-center justify-between hover:bg-white/40 rounded-2xl transition-colors group"
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-200 transition-colors">
-                                {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                            </div>
-                            <span className="font-medium text-slate-700">Backup Data (JSON)</span>
-                        </div>
-                    </button>
-
-                    <div className="h-px bg-slate-100 mx-4" />
-
-                    <button
-                        onClick={handleResetData}
-                        className="w-full p-4 flex items-center justify-between hover:bg-red-50 rounded-2xl transition-colors group"
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-600 group-hover:bg-red-200 transition-colors">
-                                <Trash2 className="h-4 w-4" />
-                            </div>
-                            <span className="font-medium text-slate-700 group-hover:text-red-700 transition-colors">Reset All Data</span>
-                        </div>
-                    </button>
-                </div>
+            <div className="text-center py-8">
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-300">TT Tracker v10.5 NikiOS</p>
             </div>
 
-            {/* About Section */}
-            <div className="text-center py-6">
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/30 text-slate-500 text-xs font-medium">
-                    <Info className="h-3 w-3" />
-                    <span>Version 10.41.15.1 • Made By Ambalavanan </span>
-                </div>
-            </div>
-
-            {/* Sign Out Button */}
             <button
                 onClick={handleSignOut}
-                className="w-full glass-card rounded-2xl p-4 flex items-center justify-center gap-2 text-red-500 font-bold hover:bg-red-50 transition-colors"
+                className="w-full glass-button p-5 rounded-[2rem] flex items-center justify-center gap-3 text-red-500 font-bold hover:bg-red-50/50"
             >
                 <LogOut className="h-5 w-5" />
                 Sign Out
             </button>
 
-            <EditProfileModal
-                isOpen={isEditModalOpen}
-                onClose={() => setIsEditModalOpen(false)}
-                currentProfile={profile}
-                onSuccess={fetchProfile}
-            />
-
-            <AppSettingsModal
-                isOpen={isSettingsModalOpen}
-                onClose={() => setIsSettingsModalOpen(false)}
-            />
-
-            <ManageCoursesModal
-                isOpen={isManageCoursesModalOpen}
-                onClose={() => setIsManageCoursesModalOpen(false)}
-            />
+            <EditProfileModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} currentProfile={profile} onSuccess={fetchProfile} />
+            <AppSettingsModal isOpen={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} />
+            <ManageCoursesModal isOpen={isManageCoursesModalOpen} onClose={() => setIsManageCoursesModalOpen(false)} />
         </div>
     );
 }

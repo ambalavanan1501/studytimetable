@@ -44,7 +44,9 @@ create table if not exists public.profiles (
   attendance_goal integer default 75,
   accent_color text default 'purple',
   cgpa numeric default 0,
-  credits integer default 0,
+  credits numeric default 0,
+  current_streak integer default 0,
+  last_active_date date default CURRENT_DATE,
   notifications_enabled boolean default true,
   updated_at timestamp with time zone,
   constraint profiles_pkey primary key (id)

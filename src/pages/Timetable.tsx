@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { cn } from '../lib/utils';
 import { SEO } from '../components/SEO';
+import { CalendarExportBtn } from '../components/timetable/CalendarExportBtn';
 
 export function Timetable() {
     const { user } = useAuth();
@@ -26,22 +27,30 @@ export function Timetable() {
     }, []);
 
     const fetchEntries = async () => {
-        if (!user) return;
+        if (!user) {
+            setLoading(false);
+            return;
+        }
         setLoading(true);
 
         try {
+            console.log('Fetching entries for:', selectedDay);
             // Fetch from both tables
-            const { data: basicEntries } = await supabase
+            const { data: basicEntries, error: basicError } = await supabase
                 .from('timetable_entries')
                 .select('*')
                 .eq('user_id', user.id)
                 .eq('day', selectedDay);
 
-            const { data: smartEntries } = await supabase
+            if (basicError) console.error('Basic Fetch Error:', basicError);
+
+            const { data: smartEntries, error: smartError } = await supabase
                 .from('smart_timetable_entries')
                 .select('*')
                 .eq('user_id', user.id)
                 .eq('day', selectedDay);
+
+            if (smartError) console.error('Smart Fetch Error:', smartError);
 
             // Fetch attendance logs for all subjects
             const { data: logs } = await supabase
@@ -71,6 +80,7 @@ export function Timetable() {
             setAttendanceStats(stats);
 
             const allEntries = [...(basicEntries || []), ...(smartEntries || [])];
+            console.log(`Found ${allEntries.length} entries for ${selectedDay}`);
 
             // Sort by start time
             allEntries.sort((a, b) => a.start_time.localeCompare(b.start_time));
@@ -96,137 +106,139 @@ export function Timetable() {
     };
 
     return (
-        <div className="min-h-screen pb-24 relative overflow-hidden">
+        <div className="pb-32 space-y-10 animate-fade-in-up">
             <SEO
                 title="Schedule"
                 description="Manage your class timetable and track attendance."
             />
-            {/* Dark Purple Gradient Background */}
-            <div className="fixed inset-0 bg-gradient-to-br from-[#2e1065] via-[#4c1d95] to-[#1e1b4b] z-0" />
 
-            {/* Ambient Glows */}
-            <div className="fixed top-[-10%] right-[-10%] w-[300px] h-[300px] bg-purple-500/30 rounded-full blur-[100px] pointer-events-none z-0" />
-            <div className="fixed bottom-[10%] left-[-10%] w-[250px] h-[250px] bg-indigo-500/30 rounded-full blur-[100px] pointer-events-none z-0" />
-
-            <div className="p-6 relative z-10 space-y-8">
-                <div className="mt-4">
-                    <h1 className="text-4xl font-bold text-white tracking-tight">Schedule</h1>
-                    <p className="text-purple-200/80 text-lg font-medium">Manage your classes</p>
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mt-4 px-2">
+                <div className="flex flex-col gap-2">
+                    <h1 className="text-4xl md:text-5xl font-semibold text-slate-900 tracking-tighter leading-none">Schedule</h1>
+                    <p className="text-lg text-slate-500 font-medium font-display tracking-wide">Your week at a glance.</p>
                 </div>
+                <CalendarExportBtn />
+            </div>
 
-                {/* Day Selector */}
-                <div className="flex overflow-x-auto pb-2 gap-4 no-scrollbar snap-x">
+            {/* NikiOS Day Selector */}
+            <div className="sticky top-4 z-40 mx-auto max-w-fit">
+                <div className="glass-vision rounded-full p-2 flex gap-1 shadow-2xl backdrop-blur-3xl border border-white/60">
                     {days.map((day) => (
                         <button
                             key={day}
                             onClick={() => setSelectedDay(day)}
                             className={cn(
-                                "flex flex-col items-center justify-center min-w-[60px] py-2 rounded-2xl transition-all snap-center",
+                                "relative px-6 py-3 rounded-full text-sm font-bold transition-all duration-300 ease-out flex-shrink-0",
                                 selectedDay === day
-                                    ? "bg-primary-600 text-white shadow-[0_0_20px_rgba(124,58,237,0.5)] scale-110"
-                                    : "text-purple-200/60 hover:text-white"
+                                    ? "text-white shadow-lg scale-105"
+                                    : "text-slate-500 hover:text-slate-900 hover:bg-white/40"
                             )}
                         >
-                            <span className="text-sm font-bold capitalize tracking-wide">{day.slice(0, 3)}</span>
+                            {/* Active background pill */}
+                            {selectedDay === day && (
+                                <div className="absolute inset-0 bg-slate-900 rounded-full -z-10 animate-breathe" />
+                            )}
+                            <span className="tracking-wide">{day.slice(0, 3)}</span>
                         </button>
                     ))}
                 </div>
-
-                {/* Timeline */}
-                <div className="space-y-4 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-6 md:space-y-0">
-                    {loading ? (
-                        <div className="col-span-full text-center py-20">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
-                            <p className="text-purple-200">Loading schedule...</p>
-                        </div>
-                    ) : entries.length === 0 ? (
-                        <div className="col-span-full text-center py-20 flex flex-col items-center justify-center">
-                            <div className="w-20 h-20 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center mb-6 border border-white/20">
-                                <CalendarIcon className="h-10 w-10 text-purple-200" />
-                            </div>
-                            <h3 className="text-lg font-semibold text-white">No classes today</h3>
-                            <p className="text-purple-200/60 mb-6">Enjoy your free time!</p>
-                            <button
-                                onClick={() => setIsSmartAddOpen(true)}
-                                className="text-white font-bold hover:underline bg-white/10 px-6 py-2 rounded-full backdrop-blur-sm"
-                            >
-                                Add a class
-                            </button>
-                        </div>
-                    ) : (
-                        entries.map((entry, index) => (
-                            <div
-                                key={entry.id}
-                                className="relative group animate-fade-in-up opacity-0"
-                                style={{ animationDelay: `${index * 0.1}s` }}
-                            >
-                                {/* Glass Card Redesigned for Mobile */}
-                                <div className="bg-white/95 backdrop-blur-xl p-5 rounded-3xl shadow-lg border border-white/50 flex flex-col gap-3 relative overflow-hidden">
-                                    {/* Side Bar for Time Conext */}
-                                    <div className={cn(
-                                        "absolute left-0 top-0 bottom-0 w-2",
-                                        entry.type === 'theory' ? "bg-blue-500" : "bg-pink-500"
-                                    )} />
-
-                                    <div className="flex justify-between items-start pl-3">
-                                        <div>
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border border-slate-200">
-                                                    {entry.subject_code}
-                                                </span>
-                                                <span className={cn(
-                                                    "text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wide",
-                                                    entry.type === 'theory' ? "text-blue-600 bg-blue-50" : "text-pink-600 bg-pink-50"
-                                                )}>
-                                                    {entry.type}
-                                                </span>
-                                            </div>
-                                            <h3 className="font-bold text-slate-900 text-lg leading-tight line-clamp-2">{entry.subject_name}</h3>
-                                        </div>
-
-                                        {/* Attendance Badge */}
-                                        {attendanceStats[entry.subject_code] !== undefined && (
-                                            <div className="flex flex-col items-end">
-                                                <div className={cn(
-                                                    "px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm border",
-                                                    attendanceStats[entry.subject_code] >= 75
-                                                        ? "bg-green-50 text-green-700 border-green-200"
-                                                        : attendanceStats[entry.subject_code] >= 65
-                                                            ? "bg-yellow-50 text-yellow-700 border-yellow-200"
-                                                            : "bg-red-50 text-red-700 border-red-200"
-                                                )}>
-                                                    {attendanceStats[entry.subject_code]}%
-                                                    <span className="text-[10px] font-normal opacity-70">Att.</span>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="flex items-center gap-4 text-sm text-slate-600 pl-3 mt-2">
-                                        <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-lg">
-                                            <Clock className="h-3.5 w-3.5 text-slate-400" />
-                                            <span className="font-bold text-slate-700">{formatTime(entry.start_time)} - {formatTime(entry.end_time)}</span>
-                                        </div>
-                                        {entry.room_number && (
-                                            <div className="flex items-center gap-1.5">
-                                                <MapPin className="h-3.5 w-3.5 text-slate-400" />
-                                                <span className="font-medium text-slate-500">{entry.room_number}</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        ))
-                    )}
-                </div>
             </div>
 
-            {/* Floating Action Button */}
+            {/* Timeline Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 min-h-[50vh]">
+                {loading ? (
+                    <div className="col-span-full flex flex-col items-center justify-center py-20">
+                        <div className="w-12 h-12 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin mb-6"></div>
+                        <p className="font-bold text-slate-400 animate-pulse tracking-widest uppercase text-xs">Loading...</p>
+                    </div>
+                ) : entries.length === 0 ? (
+                    <div className="col-span-full flex flex-col items-center justify-center py-20 text-center">
+                        <div className="w-32 h-32 glass-vision rounded-[2.5rem] flex items-center justify-center mb-8 shadow-xl animate-float">
+                            <CalendarIcon className="h-12 w-12 text-slate-300" />
+                        </div>
+                        <h3 className="text-3xl font-bold text-slate-800 mb-2 tracking-tight">No classes</h3>
+                        <p className="text-slate-400 font-medium mb-10 text-lg">Enjoy your free time!</p>
+                        <button
+                            onClick={() => setIsSmartAddOpen(true)}
+                            className="glass-button px-8 py-4 rounded-full text-slate-700 font-bold hover:scale-105 transition-transform flex items-center gap-3"
+                        >
+                            <Plus className="h-5 w-5" />
+                            <span>Add Class</span>
+                        </button>
+                    </div>
+                ) : (
+                    entries.map((entry, index) => (
+                        <div
+                            key={entry.id}
+                            className="group animate-fade-in-up opacity-0"
+                            style={{ animationDelay: `${index * 0.1}s` }}
+                        >
+                            <div className="glass-vision p-5 rounded-[1.5rem] h-full flex flex-col relative overflow-hidden group-hover:bg-white/50 transition-all duration-500 hover:shadow-2xl hover:-translate-y-2">
+                                {/* Vertical Accent Bar */}
+                                <div className={cn(
+                                    "absolute left-0 top-0 bottom-0 w-3",
+                                    entry.type === 'theory' ? "bg-indigo-500" : "bg-pink-500"
+                                )} />
+
+                                <div className="flex justify-between items-start mb-6 pl-4">
+                                    <div className="space-y-2">
+                                        <div className="flex gap-2">
+                                            <span className="glass-panel px-3 py-1 rounded-lg text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                                {entry.subject_code}
+                                            </span>
+                                        </div>
+                                        <h3 className="font-bold text-xl text-slate-800 leading-tight tracking-tight">{entry.subject_name}</h3>
+                                        <div className="flex items-center gap-2">
+                                            <span className={cn(
+                                                "text-xs font-bold uppercase tracking-wider",
+                                                entry.type === 'theory' ? "text-indigo-500" : "text-pink-500"
+                                            )}>
+                                                {entry.type}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Attendance Pill */}
+                                    {attendanceStats[entry.subject_code] !== undefined && (
+                                        <div className={cn(
+                                            "px-3 py-1.5 rounded-full text-xs font-bold shadow-sm border border-white/50 backdrop-blur-md",
+                                            attendanceStats[entry.subject_code] >= 75
+                                                ? "bg-emerald-100/50 text-emerald-700"
+                                                : attendanceStats[entry.subject_code] >= 65
+                                                    ? "bg-amber-100/50 text-amber-700"
+                                                    : "bg-red-100/50 text-red-700"
+                                        )}>
+                                            {attendanceStats[entry.subject_code]}%
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="mt-auto pl-4 pt-6 border-t border-white/20 flex items-center justify-between text-slate-500">
+                                    <div className="flex items-center gap-2">
+                                        <Clock className="h-4 w-4 text-slate-400" />
+                                        <span className="font-bold text-sm bg-white/40 px-3 py-1 rounded-lg">
+                                            {formatTime(entry.start_time)}
+                                        </span>
+                                    </div>
+                                    {entry.room_number && (
+                                        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-400">
+                                            <MapPin className="h-4 w-4" />
+                                            {entry.room_number}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
+
+            {/* NikiOS Floating Action Button */}
             <button
                 onClick={() => setIsSmartAddOpen(true)}
-                className="fixed bottom-24 right-6 bg-white hover:bg-slate-50 text-slate-900 p-5 rounded-full shadow-[0_0_30px_rgba(255,255,255,0.3)] transition-all active:scale-95 z-50 flex items-center justify-center"
+                className="fixed bottom-24 right-8 w-14 h-14 glass-vision bg-slate-900/90 text-white rounded-[1.5rem] shadow-2xl z-50 flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300 group ring-1 ring-white/20"
             >
-                <Plus className="h-8 w-8" />
+                <Plus className="h-6 w-6 group-hover:rotate-90 transition-transform duration-500" />
             </button>
 
             <SmartAddModal
