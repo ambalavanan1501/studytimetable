@@ -2,124 +2,95 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
 
-type Theme = 'purple' | 'blue' | 'green' | 'orange' | 'pink';
-type Mode = 'light' | 'dark';
+// Visual Style (Shapes, Borders, Shadows)
+export type ThemeStyle = 'spatial' | 'neo' | 'swiss';
+// Color Mode (Light vs Dark)
+export type ThemeMode = 'light' | 'dark';
+// Accent Color (unchanged)
+export type ThemeColor = 'purple' | 'blue' | 'green' | 'orange' | 'pink';
 
 interface ThemeContextType {
-    theme: Theme;
-    mode: Mode;
-    setTheme: (theme: Theme) => void;
-    setMode: (mode: Mode) => void;
+    themeStyle: ThemeStyle;
+    mode: ThemeMode;
+    accent: ThemeColor;
+    setThemeStyle: (style: ThemeStyle) => void;
+    setMode: (mode: ThemeMode) => void;
+    setAccent: (accent: ThemeColor) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
-    // Initialize from localStorage or default to 'light'
-    const [theme, setThemeState] = useState<Theme>(
-        (localStorage.getItem('app-theme') as Theme) || 'purple'
+
+    // 1. Visual Style State
+    const [themeStyle, setThemeStyleState] = useState<ThemeStyle>(
+        (localStorage.getItem('app-theme-style') as ThemeStyle) || 'spatial'
     );
 
-    // STRICT MODE: Always force light mode
-    const mode: Mode = 'light';
+    // 2. Color Mode State
+    const [mode, setModeState] = useState<ThemeMode>(
+        (localStorage.getItem('app-mode') as ThemeMode) || 'light'
+    );
 
-    // Apply to DOM immediately
+    // 3. Accent Color State
+    const [accent, setAccentState] = useState<ThemeColor>(
+        (localStorage.getItem('app-accent') as ThemeColor) || 'purple'
+    );
+
+    // Apply Logic
     useEffect(() => {
         const root = window.document.documentElement;
 
-        // Force cleanup of dark mode
-        root.classList.remove('dark');
-        root.classList.add('light');
+        // Apply Style
+        root.setAttribute('data-theme-style', themeStyle);
+        localStorage.setItem('app-theme-style', themeStyle);
 
-        // Set data-theme attribute
-        root.setAttribute('data-theme', theme);
+        // Apply Mode
+        root.classList.remove('light', 'dark');
+        root.classList.add(mode);
+        localStorage.setItem('app-mode', mode);
 
-        // Contextual Theming Logic
-        const updateAurora = () => {
-            const hour = new Date().getHours();
-            let colors = {
-                a1: '238 100% 96%', // Default
-                a2: '220 100% 96%',
-                a3: '280 100% 96%',
-                a4: '180 100% 96%'
-            };
+        // Apply Accent
+        root.setAttribute('data-theme-accent', accent);
+        localStorage.setItem('app-accent', accent);
 
-            if (hour >= 5 && hour < 11) {
-                // Morning Mist (Soft Gold/Pink/Blue)
-                colors = {
-                    a1: '35 100% 92%',  // Soft Orange
-                    a2: '200 100% 94%', // Sky Blue
-                    a3: '340 100% 94%', // Pink
-                    a4: '60 100% 90%'   // Light Yellow
-                };
-            } else if (hour >= 11 && hour < 17) {
-                // Day (Bright, classic aurora)
-                colors = {
-                    a1: '238 100% 96%',
-                    a2: '220 100% 96%',
-                    a3: '280 100% 96%',
-                    a4: '180 100% 96%'
-                };
-            } else {
-                // Night Aura (Deep Indigo/Purple - but still light mode translucent)
-                colors = {
-                    a1: '260 80% 92%',  // Deep Purple
-                    a2: '230 80% 94%',  // Deep Blue
-                    a3: '290 80% 92%',  // Magenta
-                    a4: '200 80% 90%'   // Cyan
-                };
-            }
+        // Dynamic Aurora (Only active in 'spatial' style usually, but we keep the logic generic)
 
-            root.style.setProperty('--aurora-1', colors.a1);
-            root.style.setProperty('--aurora-2', colors.a2);
-            root.style.setProperty('--aurora-3', colors.a3);
-            root.style.setProperty('--aurora-4', colors.a4);
-        };
+        // updateAurora(); // We will rely more on CSS variables now in index.css
 
-        updateAurora();
-        // Check every minute
-        const timer = setInterval(updateAurora, 60000);
+    }, [themeStyle, mode, accent]);
 
-        // Persist to localStorage
-        localStorage.setItem('app-theme', theme);
-        localStorage.setItem('app-mode', 'light');
 
-        return () => clearInterval(timer);
-    }, [theme]);
-
-    // Sync with Supabase when user logs in
+    // Sync with Supabase (Optional: Persist preferences)
     useEffect(() => {
         if (user) {
             const fetchPreferences = async () => {
                 const { data } = await supabase
                     .from('profiles')
-                    .select('accent_color')
+                    .select('accent_color') // We could add theme_style column later
                     .eq('id', user.id)
                     .single();
 
                 if (data && data.accent_color) {
-                    setThemeState(data.accent_color as Theme);
+                    setAccentState(data.accent_color as ThemeColor);
                 }
             };
             fetchPreferences();
         }
     }, [user]);
 
-    const setTheme = (newTheme: Theme) => {
-        setThemeState(newTheme);
+    const setThemeStyle = (style: ThemeStyle) => setThemeStyleState(style);
+    const setMode = (m: ThemeMode) => setModeState(m);
+    const setAccent = (c: ThemeColor) => {
+        setAccentState(c);
         if (user) {
-            supabase.from('profiles').update({ accent_color: newTheme }).eq('id', user.id).then();
+            supabase.from('profiles').update({ accent_color: c }).eq('id', user.id).then();
         }
     };
 
-    const setMode = (_: Mode) => {
-        // No-op: Mode changes are disabled
-        console.warn("Dark mode is disabled in this premium theme.");
-    };
-
     return (
-        <ThemeContext.Provider value={{ theme, mode, setTheme, setMode }}>
+        <ThemeContext.Provider value={{ themeStyle, mode, accent, setThemeStyle, setMode, setAccent }}>
             {children}
         </ThemeContext.Provider>
     );

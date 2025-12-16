@@ -1,0 +1,1 @@
+const t=t=>{try{const e=localStorage.getItem("day-orders");if(!e)return null;return JSON.parse(e)[t]||null}catch(e){return null}},e=(t,e)=>{try{const r=localStorage.getItem("day-orders"),a=r?JSON.parse(r):{};a[t]=e,localStorage.setItem("day-orders",JSON.stringify(a)),window.dispatchEvent(new Event("day-order-changed"))}catch(r){}};export{t as getDayOrder,e as setDayOrder};

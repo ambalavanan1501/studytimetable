@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Calendar as CalendarIcon, Check, X, Clock, ChevronLeft, ChevronRight, BarChart3, ListChecks, AlertTriangle } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { getDayOrder, setDayOrder as saveDayOrder } from '../lib/dayOrder';
 
 interface AttendanceLog {
     subject_code: string;
@@ -25,6 +26,13 @@ export function Attendance() {
     const [classes, setClasses] = useState<any[]>([]);
     const [attendanceLogs, setAttendanceLogs] = useState<AttendanceLog[]>([]);
     const [stats, setStats] = useState<CourseStats[]>([]);
+    const [dayOrder, setDayOrder] = useState<string | null>(null);
+    const [attendanceGoal, setAttendanceGoal] = useState(75);
+
+    // Import helper dynamically or use direct import if top-level
+    // Assuming we added the file, we should import it at the top, 
+    // but since I'm editing a block, I'll add the hook logic here first.
+    // Better: I will do a multi-replace to add imports at top and state here.
 
 
     const formatDate = (date: Date) => {
@@ -42,11 +50,16 @@ export function Attendance() {
             if (view === 'mark') {
                 const dayName = getDayName(selectedDate);
                 const dateStr = formatDate(selectedDate);
+                const order = getDayOrder(dateStr);
+                setDayOrder(order);
+
+                // Use day order if exists, otherwise actual day
+                const queryDay = order || dayName;
 
                 // 1. Fetch Timetable for the day
                 const [basic, smart] = await Promise.all([
-                    supabase.from('timetable_entries').select('*').eq('user_id', user.id).eq('day', dayName),
-                    supabase.from('smart_timetable_entries').select('*').eq('user_id', user.id).eq('day', dayName)
+                    supabase.from('timetable_entries').select('*').eq('user_id', user.id).eq('day', queryDay),
+                    supabase.from('smart_timetable_entries').select('*').eq('user_id', user.id).eq('day', queryDay)
                 ]);
 
                 const allClasses = [...(basic.data || []), ...(smart.data || [])];
@@ -61,6 +74,12 @@ export function Attendance() {
                     .eq('date', dateStr);
 
                 setAttendanceLogs(logs || []);
+                setAttendanceLogs(logs || []);
+
+                // Fetch attendance goal
+                const { data: profile } = await supabase.from('profiles').select('attendance_goal').eq('id', user.id).single();
+                if (profile?.attendance_goal) setAttendanceGoal(profile.attendance_goal);
+
             } else {
                 // Fetch Stats
                 // 1. Get all unique subjects from timetable
@@ -75,6 +94,10 @@ export function Attendance() {
                         uniqueSubjects.set(s.subject_code, s.subject_name);
                     }
                 });
+
+                // Fetch attendance goal
+                const { data: profile } = await supabase.from('profiles').select('attendance_goal').eq('id', user.id).single();
+                if (profile?.attendance_goal) setAttendanceGoal(profile.attendance_goal);
 
                 // 2. Get all attendance logs
                 const { data: allLogs } = await supabase
@@ -147,6 +170,18 @@ export function Attendance() {
         setSelectedDate(newDate);
     };
 
+    const handleDayOrderChange = (day: string | null) => {
+        const dateStr = formatDate(selectedDate);
+        if (day) {
+            saveDayOrder(dateStr, day);
+        }
+        // Force refresh
+        fetchAttendanceData();
+    };
+
+    const daysList = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    const isSpecialDay = getDayName(selectedDate) === 'Saturday' || dayOrder !== null;
+
 
 
     return (
@@ -156,16 +191,16 @@ export function Attendance() {
                 <p className="text-lg text-slate-500 font-medium font-display tracking-wide">Stay present, stay ahead.</p>
             </div>
 
-            {/* View Switcher - Floating Glass Capsule */}
+            {/* View Switcher - Minimal Pills */}
             <div className="flex justify-center sticky top-4 z-40">
-                <div className="glass-vision p-1.5 rounded-full flex gap-1 shadow-2xl backdrop-blur-3xl border border-white/60">
+                <div className="bg-white/80 p-1 rounded-full flex gap-1 shadow-sm border border-slate-200/50 backdrop-blur-md">
                     <button
                         onClick={() => setView('mark')}
                         className={cn(
                             "px-6 py-2 rounded-full text-xs font-bold transition-all duration-300 flex items-center gap-2",
                             view === 'mark'
-                                ? "bg-slate-900 text-white shadow-lg scale-105"
-                                : "text-slate-500 hover:text-slate-900 hover:bg-white/40"
+                                ? "bg-slate-900 text-white shadow"
+                                : "text-slate-400 hover:text-slate-900 hover:bg-slate-100"
                         )}
                     >
                         <ListChecks className="h-4 w-4" />
@@ -176,8 +211,8 @@ export function Attendance() {
                         className={cn(
                             "px-6 py-2 rounded-full text-xs font-bold transition-all duration-300 flex items-center gap-2",
                             view === 'stats'
-                                ? "bg-slate-900 text-white shadow-lg scale-105"
-                                : "text-slate-500 hover:text-slate-900 hover:bg-white/40"
+                                ? "bg-slate-900 text-white shadow"
+                                : "text-slate-400 hover:text-slate-900 hover:bg-slate-100"
                         )}
                     >
                         <BarChart3 className="h-4 w-4" />
@@ -189,17 +224,17 @@ export function Attendance() {
             {view === 'mark' ? (
                 <>
                     {/* Date Selector */}
-                    <div className="glass-vision p-4 rounded-[2rem] flex items-center justify-between shadow-xl">
+                    <div className="card-base p-4 rounded-[1.5rem] flex items-center justify-between shadow-sm border border-slate-100">
                         <button
                             onClick={() => changeDate(-1)}
-                            className="p-4 hover:bg-white/50 text-slate-400 hover:text-slate-900 rounded-2xl transition-all"
+                            className="p-3 hover:bg-slate-100 text-slate-400 hover:text-slate-900 rounded-xl transition-all"
                         >
-                            <ChevronLeft className="h-6 w-6" />
+                            <ChevronLeft className="h-5 w-5" />
                         </button>
                         <div className="flex flex-col items-center">
-                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 mb-1">{getDayName(selectedDate)}</span>
-                            <div className="flex items-center gap-3">
-                                <span className="text-3xl font-bold text-slate-900 tracking-tighter tabular-nums">
+                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-1">{getDayName(selectedDate)}</span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-2xl font-black text-slate-900 tracking-tighter tabular-nums">
                                     {selectedDate.toLocaleDateString(undefined, { day: 'numeric' })}
                                 </span>
                                 <span className="text-xl font-medium text-slate-500">
@@ -209,20 +244,45 @@ export function Attendance() {
                         </div>
                         <button
                             onClick={() => changeDate(1)}
-                            className="p-4 hover:bg-white/50 text-slate-400 hover:text-slate-900 rounded-2xl transition-all"
+                            className="p-3 hover:bg-slate-100 text-slate-400 hover:text-slate-900 rounded-xl transition-all"
                         >
-                            <ChevronRight className="h-6 w-6" />
+                            <ChevronRight className="h-5 w-5" />
                         </button>
                     </div>
 
-                    {/* Class List */}
-                    <div className="space-y-6">
-                        {classes.length === 0 ? (
-                            <div className="text-center py-20 px-6 glass-vision rounded-[3rem] border-2 border-dashed border-white/30">
-                                <div className="w-20 h-20 bg-slate-100 rounded-[2rem] flex items-center justify-center mx-auto mb-6 text-slate-300 animate-float">
-                                    <CalendarIcon className="h-10 w-10" />
+                    {/* Day Order Selector */}
+                    {isSpecialDay && (
+                        <div className="flex justify-center mb-6 animate-fade-in-up">
+                            <div className="bg-white p-2 rounded-2xl flex flex-col items-center gap-2 border border-slate-100 shadow-sm">
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Day Order</span>
+                                <div className="flex flex-wrap justify-center gap-2">
+                                    {daysList.map(d => (
+                                        <button
+                                            key={d}
+                                            onClick={() => handleDayOrderChange(d)}
+                                            className={cn(
+                                                "px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
+                                                (dayOrder === d || (!dayOrder && getDayName(selectedDate) === d))
+                                                    ? "bg-slate-900 text-white"
+                                                    : "bg-slate-50 text-slate-500 hover:bg-slate-100"
+                                            )}
+                                        >
+                                            {d.slice(0, 3)}
+                                        </button>
+                                    ))}
                                 </div>
-                                <p className="text-2xl font-bold text-slate-300 tracking-tight">No classes scheduled</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Class List */}
+                    <div className="space-y-4">
+                        {classes.length === 0 ? (
+                            <div className="text-center py-20 px-6 card-base rounded-[2rem] border-dashed border-slate-200">
+                                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
+                                    <CalendarIcon className="h-8 w-8" />
+                                </div>
+                                <p className="text-lg font-bold text-slate-300 text-center">No classes scheduled</p>
                             </div>
                         ) : (
                             classes.map((cls) => {
@@ -231,55 +291,51 @@ export function Attendance() {
                                 const isAbsent = log?.status === 'absent';
 
                                 return (
-                                    <div key={cls.id} className="glass-vision p-5 rounded-[1.5rem] group hover:bg-white/60 transition-all duration-300">
-                                        <div className="flex flex-col md:flex-row justify-between md:items-start mb-6 gap-4">
+                                    <div key={cls.id} className="card-base p-6 rounded-[1.5rem] group hover:border-slate-300 transition-all duration-300">
+                                        <div className="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-4">
                                             <div>
-                                                <div className="flex items-center gap-3 mb-2">
-                                                    <span className="glass-panel px-3 py-1 rounded-lg text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                                <div className="flex items-center gap-3 mb-1">
+                                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                                         {cls.subject_code}
                                                     </span>
                                                     <span className={cn(
-                                                        "text-[10px] px-3 py-1 rounded-lg font-black uppercase tracking-widest",
-                                                        cls.type === 'theory' ? "bg-indigo-100 text-indigo-700" : "bg-pink-100 text-pink-700"
-                                                    )}>
-                                                        {cls.type}
-                                                    </span>
+                                                        "w-1.5 h-1.5 rounded-full",
+                                                        cls.type === 'theory' ? "bg-indigo-500" : "bg-pink-500"
+                                                    )} />
                                                 </div>
-                                                <h3 className="font-bold text-2xl text-slate-900 tracking-tight leading-none">{cls.subject_name}</h3>
+                                                <h3 className="font-bold text-xl text-slate-900 tracking-tight">{cls.subject_name}</h3>
                                             </div>
 
-                                            <div className="flex items-center gap-2 text-sm font-bold text-slate-500 bg-white/40 px-4 py-2 rounded-xl self-start">
-                                                <Clock className="h-4 w-4" />
+                                            <div className="flex items-center gap-2 text-xs font-bold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg self-start md:self-center">
+                                                <Clock className="h-3 w-3" />
                                                 {cls.start_time.slice(0, 5)} - {cls.end_time.slice(0, 5)}
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-2 gap-3">
                                             <button
                                                 onClick={() => markAttendance(cls.subject_code, 'present')}
                                                 className={cn(
-                                                    "flex items-center justify-center gap-3 py-4 rounded-[1.5rem] font-bold transition-all duration-300 relative overflow-hidden group/btn",
+                                                    "flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all duration-300 border-2",
                                                     isPresent
-                                                        ? "bg-emerald-500 text-white shadow-xl shadow-emerald-500/30 scale-[1.02]"
-                                                        : "bg-white/50 text-slate-400 hover:bg-emerald-100 hover:text-emerald-600"
+                                                        ? "bg-emerald-50 border-emerald-500 text-emerald-700"
+                                                        : "bg-white border-slate-100 text-slate-400 hover:border-emerald-200 hover:text-emerald-600"
                                                 )}
                                             >
-                                                <Check className="h-5 w-5 stroke-[3px]" />
+                                                {isPresent ? <Check className="h-4 w-4" /> : <div className="w-4 h-4 rounded-full border-2 border-slate-200 group-hover:border-emerald-400" />}
                                                 <span>Present</span>
-                                                {isPresent && <div className="absolute inset-0 bg-white/20 animate-pulse"></div>}
                                             </button>
                                             <button
                                                 onClick={() => markAttendance(cls.subject_code, 'absent')}
                                                 className={cn(
-                                                    "flex items-center justify-center gap-3 py-4 rounded-[1.5rem] font-bold transition-all duration-300 relative overflow-hidden group/btn",
+                                                    "flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all duration-300 border-2",
                                                     isAbsent
-                                                        ? "bg-red-500 text-white shadow-xl shadow-red-500/30 scale-[1.02]"
-                                                        : "bg-white/50 text-slate-400 hover:bg-red-100 hover:text-red-600"
+                                                        ? "bg-red-50 border-red-500 text-red-700"
+                                                        : "bg-white border-slate-100 text-slate-400 hover:border-red-200 hover:text-red-600"
                                                 )}
                                             >
-                                                <X className="h-5 w-5 stroke-[3px]" />
+                                                {isAbsent ? <X className="h-4 w-4" /> : <div className="w-4 h-4 rounded-full border-2 border-slate-200 group-hover:border-red-400" />}
                                                 <span>Absent</span>
-                                                {isAbsent && <div className="absolute inset-0 bg-white/20 animate-pulse"></div>}
                                             </button>
                                         </div>
                                     </div>
@@ -289,64 +345,55 @@ export function Attendance() {
                     </div>
                 </>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {stats.length === 0 ? (
-                        <div className="col-span-full text-center py-20 text-slate-400 glass-vision rounded-[3rem]">
+                        <div className="col-span-full text-center py-20 text-slate-400 card-base rounded-[2rem] border-dashed border-slate-200">
                             <p className="text-xl font-bold">No attendance data yet</p>
                             <p className="text-sm mt-2 opacity-60">Start marking your classes to see stats!</p>
                         </div>
                     ) : (
                         stats.map((stat) => {
-                            const percentageColor = stat.percentage >= 75 ? 'bg-emerald-500' : 'bg-red-500';
-
                             return (
-                                <div key={stat.subject_code} className="glass-vision p-5 rounded-[1.5rem] hover:scale-[1.02] transition-all duration-500 group relative overflow-hidden">
-                                    {/* Background Gradient based on percentage */}
-                                    {stat.percentage < 75 && <div className="absolute inset-0 bg-gradient-to-br from-red-50 to-transparent opacity-50 pointer-events-none" />}
-
-                                    <div className="relative z-10 flex justify-between items-start mb-6">
-                                        <div className="flex-1 pr-4">
-                                            <h3 className="font-bold text-slate-900 text-xl leading-tight mb-2 line-clamp-1" title={stat.subject_name}>{stat.subject_name}</h3>
-                                            <span className="glass-panel px-2 py-1 rounded text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.subject_code}</span>
+                                <div key={stat.subject_code} className="card-base p-6 rounded-[1.5rem] hover:shadow-lg transition-all duration-300 flex flex-col justify-between">
+                                    <div className="mb-6">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <div className="flex-1 pr-4">
+                                                <h3 className="font-bold text-slate-900 text-lg leading-tight line-clamp-1" title={stat.subject_name}>{stat.subject_name}</h3>
+                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.subject_code}</span>
+                                            </div>
+                                            <div className={cn(
+                                                "text-xl font-black tabular-nums",
+                                                stat.percentage >= attendanceGoal ? "text-emerald-600" : "text-red-500"
+                                            )}>
+                                                {stat.percentage}%
+                                            </div>
                                         </div>
-                                        <div className={cn(
-                                            "min-w-[4rem] h-[4rem] rounded-[1.5rem] flex items-center justify-center text-xl font-black shadow-lg",
-                                            stat.percentage >= 75 ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-600"
-                                        )}>
-                                            {stat.percentage}
-                                            <span className="text-xs ml-0.5">%</span>
+
+                                        {/* Minimal Progress Bar */}
+                                        <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                                            <div
+                                                className={cn("h-full rounded-full transition-all duration-1000 ease-out", stat.percentage >= attendanceGoal ? "bg-emerald-500" : "bg-red-500")}
+                                                style={{ width: `${stat.percentage}%` }}
+                                            />
                                         </div>
                                     </div>
 
-                                    {/* Progress Bar Container */}
-                                    <div className="h-4 w-full bg-slate-100/50 rounded-full overflow-hidden mb-6 ring-1 ring-white/50">
-                                        <div
-                                            className={cn("h-full rounded-full transition-all duration-1000 ease-out shadow-sm", percentageColor)}
-                                            style={{ width: `${stat.percentage}%` }}
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-3 gap-3 text-center">
-                                        <div className="bg-white/40 rounded-2xl p-3 border border-white/60">
-                                            <div className="text-[10px] uppercase font-bold text-slate-400 mb-1">Present</div>
-                                            <div className="text-xl font-black text-emerald-600">{stat.present}</div>
+                                    <div className="flex items-center justify-between text-xs font-bold text-slate-500 border-t border-slate-50 pt-4">
+                                        <div className="flex flex-col items-center">
+                                            <span className="text-emerald-600">{stat.present}</span>
+                                            <span className="text-[9px] uppercase tracking-widest text-slate-300">Pres</span>
                                         </div>
-                                        <div className="bg-white/40 rounded-2xl p-3 border border-white/60">
-                                            <div className="text-[10px] uppercase font-bold text-slate-400 mb-1">Absent</div>
-                                            <div className="text-xl font-black text-red-600">{stat.absent}</div>
+                                        <div className="w-px h-4 bg-slate-100" />
+                                        <div className="flex flex-col items-center">
+                                            <span className="text-red-500">{stat.absent}</span>
+                                            <span className="text-[9px] uppercase tracking-widest text-slate-300">Abs</span>
                                         </div>
-                                        <div className="bg-white/40 rounded-2xl p-3 border border-white/60">
-                                            <div className="text-[10px] uppercase font-bold text-slate-400 mb-1">Total</div>
-                                            <div className="text-xl font-black text-slate-700">{stat.total_classes}</div>
+                                        <div className="w-px h-4 bg-slate-100" />
+                                        <div className="flex flex-col items-center">
+                                            <span className="text-slate-700">{stat.total_classes}</span>
+                                            <span className="text-[9px] uppercase tracking-widest text-slate-300">Tot</span>
                                         </div>
                                     </div>
-
-                                    {stat.percentage < 75 && (
-                                        <div className="mt-6 flex items-center gap-3 text-xs font-bold text-red-600 bg-red-100/50 px-4 py-3 rounded-xl border border-red-100/50">
-                                            <AlertTriangle className="h-4 w-4" />
-                                            <span>Attendance Critical</span>
-                                        </div>
-                                    )}
                                 </div>
                             );
                         })

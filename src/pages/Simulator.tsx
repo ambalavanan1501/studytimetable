@@ -18,14 +18,7 @@ interface MockSubject {
 }
 
 const GRADE_POINTS: Record<Grade, number> = {
-    'S': 10,
-    'A': 9,
-    'B': 8,
-    'C': 7,
-    'D': 6,
-    'E': 5,
-    'F': 0,
-    'N': 0
+    'S': 10, 'A': 9, 'B': 8, 'C': 7, 'D': 6, 'E': 5, 'F': 0, 'N': 0
 };
 
 export function Simulator() {
@@ -44,7 +37,6 @@ export function Simulator() {
     const [editingSubject, setEditingSubject] = useState<MockSubject | null>(null);
 
     useEffect(() => {
-        // Fetch existing data if available
         if (user) {
             const fetchData = async () => {
                 const { data } = await supabase
@@ -62,12 +54,10 @@ export function Simulator() {
         }
     }, [user]);
 
-    // Fetch saved subjects from IndexedDB
     useEffect(() => {
         const loadSubjects = async () => {
             const savedSubjects = await db.getAllSimulatorSubjects();
             if (savedSubjects && savedSubjects.length > 0) {
-                // Cast string grade back to Grade type carefully
                 const castedSubjects = savedSubjects.map(s => ({
                     ...s,
                     grade: s.grade as Grade
@@ -93,7 +83,6 @@ export function Simulator() {
         });
 
         if (isCumulativeMode && existingCgpa != null && existingCredits != null) {
-            // Formula: ( (ExistingCGPA * ExistingCredits) + (NewPoints) ) / (ExistingCredits + NewCredits)
             const existingPoints = existingCgpa * existingCredits;
             const finalPoints = existingPoints + totalPoints;
             const finalCredits = existingCredits + currentCredits;
@@ -101,7 +90,6 @@ export function Simulator() {
             setCalculatedGpa(finalCredits > 0 ? finalPoints / finalCredits : 0);
             setTotalCredits(finalCredits);
         } else {
-            // Just SGPA for these subjects
             setCalculatedGpa(currentCredits > 0 ? totalPoints / currentCredits : 0);
             setTotalCredits(currentCredits);
         }
@@ -121,7 +109,6 @@ export function Simulator() {
 
     const handleSaveSubject = async (data: SubjectData) => {
         if (editingSubject) {
-            // Edit existing
             const updatedSubject = { ...editingSubject, name: data.name, credits: data.credits };
             const updatedList = subjects.map(s => s.id === editingSubject.id ? updatedSubject : s);
 
@@ -130,7 +117,6 @@ export function Simulator() {
             setEditingSubject(null);
             addToast('Subject updated successfully', 'success');
         } else {
-            // Add new
             const newId = crypto.randomUUID();
             const newSubject: MockSubject = {
                 id: newId,
@@ -157,7 +143,6 @@ export function Simulator() {
     };
 
     const handleReset = async () => {
-        // Clear all from DB
         await Promise.all(subjects.map(s => db.deleteSimulatorSubject(s.id)));
         setSubjects([]);
         addToast('Simulator reset', 'info');
@@ -180,8 +165,7 @@ export function Simulator() {
                 <p className="text-lg text-slate-500 font-medium font-display tracking-wide">Predict your academic future.</p>
             </div>
 
-            <div className="glass-vision p-6 rounded-[2rem] shadow-2xl ring-1 ring-white/60 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-b from-white/20 to-transparent pointer-events-none"></div>
+            <div className="bg-white rounded-[2rem] p-8 shadow-xl shadow-slate-200 border border-slate-100 relative overflow-hidden">
                 <ResultCard
                     gpa={calculatedGpa}
                     totalCredits={totalCredits}
@@ -189,17 +173,17 @@ export function Simulator() {
                 />
             </div>
 
-            {/* Mode Switcher - Floating Glass */}
+            {/* Mode Switcher */}
             {existingCgpa !== null && (
                 <div className="flex justify-center -mt-4 relative z-10">
-                    <div className="glass-panel p-2 rounded-full flex gap-1 shadow-lg backdrop-blur-3xl">
+                    <div className="bg-white p-2 rounded-full flex gap-1 shadow-lg border border-slate-100">
                         <button
                             onClick={() => setIsCumulativeMode(false)}
                             className={cn(
                                 "px-6 py-2 rounded-full text-xs font-bold transition-all duration-300",
                                 !isCumulativeMode
-                                    ? "bg-slate-900 text-white shadow-lg scale-105"
-                                    : "text-slate-500 hover:text-slate-900 hover:bg-white/40"
+                                    ? "bg-slate-900 text-white shadow-md"
+                                    : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
                             )}
                         >
                             Semester Only
@@ -209,8 +193,8 @@ export function Simulator() {
                             className={cn(
                                 "px-6 py-2 rounded-full text-xs font-bold transition-all duration-300",
                                 isCumulativeMode
-                                    ? "bg-slate-900 text-white shadow-lg scale-105"
-                                    : "text-slate-500 hover:text-slate-900 hover:bg-white/40"
+                                    ? "bg-slate-900 text-white shadow-md"
+                                    : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
                             )}
                         >
                             Cumulative Effect
@@ -221,7 +205,7 @@ export function Simulator() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {subjects.map(subject => (
-                    <div key={subject.id} className="glass-vision p-3 rounded-[1.5rem] hover:bg-white/50 transition-colors">
+                    <div key={subject.id} className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-all">
                         <GradeSlider
                             subjectName={subject.name}
                             credits={subject.credits}
@@ -235,8 +219,8 @@ export function Simulator() {
 
                 {/* Empty State */}
                 {subjects.length === 0 && (
-                    <div className="col-span-1 md:col-span-2 py-16 glass-vision rounded-[2.5rem] flex flex-col items-center justify-center text-slate-400 gap-4 border-2 border-dashed border-white/20">
-                        <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center shadow-inner mb-2 animate-float">
+                    <div className="col-span-1 md:col-span-2 py-16 bg-slate-50 rounded-[2.5rem] flex flex-col items-center justify-center text-slate-400 gap-4 border-2 border-dashed border-slate-200">
+                        <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm mb-2">
                             <Plus className="h-8 w-8 text-slate-300" />
                         </div>
                         <div className="text-center">
@@ -250,14 +234,14 @@ export function Simulator() {
             <div className="flex justify-center gap-4 pt-6 pb-12">
                 <button
                     onClick={openAddModal}
-                    className="flex items-center gap-2 bg-slate-900 text-white px-8 py-3 rounded-full font-bold shadow-2xl shadow-slate-400/50 hover:scale-105 transition-all active:scale-95 group text-sm"
+                    className="flex items-center gap-2 bg-slate-900 text-white px-8 py-3 rounded-full font-bold shadow-xl shadow-slate-300 hover:scale-105 transition-all active:scale-95 group text-sm"
                 >
                     <Plus className="h-5 w-5 group-hover:rotate-90 transition-transform duration-300" />
                     Add Subject
                 </button>
                 <button
                     onClick={handleReset}
-                    className="flex items-center gap-2 glass-button px-8 py-3 rounded-full font-bold text-slate-600 hover:text-red-500 text-sm"
+                    className="flex items-center gap-2 bg-white border border-slate-200 px-8 py-3 rounded-full font-bold text-slate-600 hover:text-red-500 hover:bg-red-50 text-sm transition-colors"
                 >
                     <RotateCcw className="h-4 w-4" />
                     Reset

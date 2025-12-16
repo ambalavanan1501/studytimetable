@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Clock, MapPin, ListChecks, BookOpen, User, Flame } from 'lucide-react';
-import { StickyNoteWidget } from '../components/dashboard/StickyNoteWidget';
+import { Clock, BookOpen, User, ArrowRight, MapPin } from 'lucide-react';
 import { useGamification } from '../context/GamificationContext';
 import { CountdownWidget } from '../components/dashboard/CountdownWidget';
-import { MiniTaskWidget } from '../components/dashboard/MiniTaskWidget';
+import { PetWidget } from '../components/gamification/PetWidget';
 import { cn } from '../lib/utils';
+import { useSettings } from '../context/SettingsContext';
 import { SEO } from '../components/SEO';
 import {
     DndContext,
@@ -31,17 +31,18 @@ import { SubjectVault } from '../components/vault/SubjectVault';
 
 export function Dashboard() {
     const { user } = useAuth();
-    const { streak } = useGamification();
+    const { syncHealth } = useGamification();
     const [nextClass, setNextClass] = useState<any>(null);
     const [ongoingClass, setOngoingClass] = useState<any>(null);
     const [userName, setUserName] = useState('Student');
     const [attendancePercentage, setAttendancePercentage] = useState(0);
 
+    const [todayClasses, setTodayClasses] = useState<any[]>([]);
     const [currentTime, setCurrentTime] = useState(new Date());
-    const [attendanceGoal, setAttendanceGoal] = useState(75);
     const [cgpa, setCgpa] = useState(0);
     const [credits, setCredits] = useState(0);
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+    const { privacyMode } = useSettings();
 
     // Vault State
     const [isVaultOpen, setIsVaultOpen] = useState(false);
@@ -67,7 +68,13 @@ export function Dashboard() {
         const fetchDashboardData = async () => {
             const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
             // For demo, if weekend, default to Monday
-            const queryDay = ['Saturday', 'Sunday'].includes(today) ? 'Monday' : today;
+            const { getDayOrder } = await import('../lib/dayOrder');
+
+            const todayStr = new Date().toISOString().split('T')[0];
+            const order = getDayOrder(todayStr);
+
+            // For demo, if weekend, default to Monday, UNLESS there is a specific order
+            const queryDay = order ? order : (['Saturday', 'Sunday'].includes(today) ? 'Monday' : today);
 
             try {
                 const [profileRes, basicRes, smartRes, logsRes] = await Promise.all([
@@ -80,7 +87,6 @@ export function Dashboard() {
                 if (profileRes.data) {
                     const profile = profileRes.data;
                     if (profile.full_name) setUserName(profile.full_name.split(' ')[0]);
-                    if (profile.attendance_goal) setAttendanceGoal(profile.attendance_goal);
                     if (profile.cgpa) setCgpa(profile.cgpa);
                     if (profile.credits) setCredits(profile.credits);
                     if (profile.avatar_url) setAvatarUrl(profile.avatar_url);
@@ -88,6 +94,7 @@ export function Dashboard() {
 
                 const all = [...(basicRes.data || []), ...(smartRes.data || [])];
                 all.sort((a, b) => a.start_time.localeCompare(b.start_time));
+                setTodayClasses(all);
 
                 // Find next and ongoing class based on current time
                 const now = new Date();
@@ -102,7 +109,9 @@ export function Dashboard() {
                 if (logsRes.data && logsRes.data.length > 0) {
                     const present = logsRes.data.filter(l => l.status === 'present').length;
                     const total = logsRes.data.length;
-                    setAttendancePercentage(Math.round((present / total) * 100));
+                    const percentage = Math.round((present / total) * 100);
+                    setAttendancePercentage(percentage);
+                    syncHealth(percentage);
                 }
             } catch (error) {
                 console.error('Error fetching dashboard data:', error);
@@ -118,7 +127,13 @@ export function Dashboard() {
     // DnD State
     const [items, setItems] = useState<string[]>(() => {
         const saved = localStorage.getItem('dashboard-layout');
-        return saved ? JSON.parse(saved) : ['tasks', 'countdown'];
+        const defaultItems = ['countdown'];
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            // Filter out 'tasks' if legacy data exists
+            return parsed.filter((i: string) => i !== 'tasks');
+        }
+        return defaultItems;
     });
 
     const sensors = useSensors(
@@ -143,174 +158,177 @@ export function Dashboard() {
     };
 
     return (
-        <div className="p-2 md:p-4 space-y-8 pb-32 animate-fade-in-up max-w-5xl mx-auto">
+        <div className="p-4 md:p-8 space-y-6 pb-32 animate-fade-in-up max-w-[1600px] mx-auto min-h-screen">
             <SEO
                 title="Dashboard"
-                description="View your daily schedule, attendance stats, and upcoming classes."
+                description="Your student command center."
             />
-            {/* iOS 26 Header */}
-            <div className="flex flex-col md:flex-row justify-between items-end gap-6">
-                <div className="flex items-center gap-8">
-                    <Link to="/profile">
-                        {avatarUrl ? (
-                            <div className="w-16 h-16 rounded-[1.5rem] overflow-hidden border border-white/50 shadow-2xl shadow-indigo-500/20 animate-breathe transition-transform hover:scale-105 active:scale-95">
-                                <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
-                            </div>
-                        ) : (
-                            <div className="w-16 h-16 rounded-[1.5rem] glass-vision flex items-center justify-center text-slate-400 border border-white/50 shadow-2xl animate-breathe transition-transform hover:scale-105 active:scale-95">
-                                <User className="h-8 w-8 text-primary-300" />
-                            </div>
-                        )}
-                    </Link>
-                    <div>
-                        <h1 className="text-3xl md:text-5xl font-semibold tracking-tighter text-slate-900 leading-none">
-                            Hello, <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-indigo-400">{userName}</span>
-                        </h1>
-                        <p className="text-lg text-slate-500 font-medium mt-1 tracking-wide font-display">Your focus space is ready.</p>
-                    </div>
-                </div>
 
-                <div className="text-right hidden sm:flex items-center gap-4">
-                    <div className="glass-panel px-5 py-3 rounded-full flex items-center gap-2 animate-fade-in-up">
-                        <Flame className={cn("h-6 w-6", streak > 0 ? "text-orange-500 fill-orange-500/20" : "text-slate-300")} />
-                        <div>
-                            <div className="text-xl font-black text-slate-800 leading-none">{streak}</div>
-                            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">Day Streak</div>
-                        </div>
-                    </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
 
-                    <div className="glass-panel px-6 py-3 rounded-full">
-                        <div className="text-3xl font-bold text-slate-800 tracking-tight font-variant-numeric tabular-nums">
-                            {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
-                        </div>
-                        <div className="text-xs text-slate-400 font-bold uppercase tracking-widest">
-                            {currentTime.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}
-                        </div>
-                    </div>
-                </div>
-            </div>
+                {/* === LEFT COLUMN (Main Focus) === */}
+                <div className="lg:col-span-2 space-y-6">
 
-            {/* Mobile Clock */}
-            <div className="sm:hidden glass-vision p-6 rounded-[2rem] flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                    <div className="text-xs text-slate-500 font-bold uppercase tracking-wider">
-                        {currentTime.toLocaleDateString([], { weekday: 'short', day: 'numeric' })}
-                    </div>
-                    {streak > 0 && (
-                        <div className="flex items-center gap-1 bg-orange-50 px-2 py-1 rounded-lg">
-                            <Flame className="h-3 w-3 text-orange-500 fill-orange-500" />
-                            <span className="text-xs font-bold text-orange-600">{streak}</span>
-                        </div>
-                    )}
-                </div>
-                <div className="text-3xl font-black text-slate-800 font-variant-numeric tabular-nums">
-                    {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                {/* Main Column: Schedule (8 cols) */}
-                <div className="lg:col-span-8 space-y-8">
-                    {/* Hero Spatial Card */}
-                    <div className={cn(
-                        "relative overflow-hidden group transition-all duration-700 ease-out rounded-[2.5rem] min-h-[220px] flex flex-col justify-between p-8",
-                        ongoingClass
-                            ? "bg-white shadow-[0_30px_60px_rgba(255,100,100,0.2)] ring-1 ring-red-100/50"
-                            : "bg-white shadow-[0_30px_60px_rgba(100,100,255,0.15)] ring-1 ring-white/60"
-                    )}>
-                        {/* Aurora Blob inside card */}
-                        <div className="absolute top-[-50%] right-[-20%] w-[400px] h-[400px] bg-gradient-to-br from-primary-200/40 to-indigo-200/40 rounded-full blur-[80px] animate-blob mix-blend-multiply opacity-60"></div>
-
-                        <div className="relative z-10">
-                            <div className="flex justify-between items-start mb-8">
-                                {ongoingClass ? (
-                                    <span className="glass-panel px-4 py-2 rounded-full text-xs font-black text-red-500 uppercase tracking-widest flex items-center gap-2 animate-pulse shadow-red-200/50 shadow-lg">
-                                        <span className="w-2 h-2 rounded-full bg-red-500"></span> Live Now
-                                    </span>
-                                ) : (
-                                    <span className="glass-panel px-4 py-2 rounded-full text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 shadow-sm">
-                                        <span className="w-2 h-2 rounded-full bg-primary-400"></span> Up Next
-                                    </span>
-                                )}
-
-                                {(ongoingClass || nextClass) && (
-                                    <button
-                                        onClick={() => openVault((ongoingClass || nextClass).subject_name, (ongoingClass || nextClass).subject_code)}
-                                        className="glass-button p-4 rounded-full text-slate-600 hover:text-primary-600 hover:scale-110 active:scale-90"
-                                    >
-                                        <BookOpen className="h-6 w-6" />
-                                    </button>
-                                )}
-                            </div>
-
-                            {ongoingClass ? (
-                                <div className="space-y-2">
-                                    <h2 className="text-3xl md:text-5xl font-bold text-slate-900 tracking-tighter leading-[0.9]">{ongoingClass.subject_name}</h2>
-                                    <p className="text-lg md:text-xl text-slate-500 font-medium tracking-wide">{ongoingClass.subject_code}</p>
-                                </div>
-                            ) : nextClass ? (
-                                <div className="space-y-2">
-                                    <h2 className="text-3xl md:text-5xl font-bold text-slate-900 tracking-tighter leading-[0.9] opacity-90">{nextClass.subject_name}</h2>
-                                    <p className="text-lg md:text-xl text-slate-500 font-medium tracking-wide">{nextClass.subject_code}</p>
+                    {/* 1. HEADER (Reference Style: Avatar Left, Text Right) */}
+                    <div className="flex items-center gap-4 px-2">
+                        <Link to="/profile" className="group/avatar relative shrink-0">
+                            {avatarUrl ? (
+                                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white shadow-xl transition-transform group-hover/avatar:scale-105 ring-2 ring-slate-100">
+                                    <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
                                 </div>
                             ) : (
-                                <div className="py-6 text-center">
-                                    <p className="text-2xl font-bold text-slate-300 tracking-tight">No classes scheduled.</p>
+                                <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 border-2 border-white shadow-xl ring-2 ring-slate-100">
+                                    <User className="h-8 w-8" />
                                 </div>
+                            )}
+                            {/* Online Badge */}
+                            <div className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white animate-pulse" />
+                        </Link>
+                        <div>
+                            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 leading-tight">
+                                Hello, <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600">{userName}</span>
+                            </h1>
+                            <p className="text-sm font-medium text-slate-500 tracking-wide">
+                                Your focus space is ready.
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* 2. DATE & TIME BAR */}
+                    <div className="w-full card-base px-8 py-6 flex justify-between items-center bg-white/80 backdrop-blur-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+                                {currentTime.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' }).toUpperCase()}
+                            </div>
+                        </div>
+                        <div className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight font-variant-numeric tabular-nums">
+                            {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                        </div>
+                    </div>
+
+                    {/* 3. LIVE FOCUS CARD - Full Width on Desktop */}
+                    <div className="card-base p-8 md:p-12 relative overflow-hidden group hover-lift bg-gradient-to-br from-white via-indigo-50/20 to-purple-50/20 border-slate-100">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-indigo-500/10 transition-colors duration-700"></div>
+
+                        {/* Header: Status */}
+                        <div className="relative z-10 flex justify-between items-start mb-10">
+                            {ongoingClass ? (
+                                <span className="px-4 py-2 rounded-full bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-slate-900/20">
+                                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" /> Live
+                                </span>
+                            ) : (
+                                <span className="px-4 py-2 rounded-full bg-white text-slate-500 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 shadow-sm border border-slate-100">
+                                    <div className="w-2 h-2 rounded-full bg-slate-400" /> Up Next
+                                </span>
+                            )}
+
+                            {(ongoingClass || nextClass) && (
+                                <button
+                                    onClick={() => openVault((ongoingClass || nextClass).subject_name, (ongoingClass || nextClass).subject_code)}
+                                    className="p-3 rounded-full bg-white shadow-sm border border-slate-100 hover:scale-110 hover:shadow-md transition-all active:scale-95"
+                                >
+                                    <BookOpen className="h-5 w-5 text-slate-900" />
+                                </button>
                             )}
                         </div>
 
-                        <div className="relative z-10 md:self-end mt-4 flex flex-wrap gap-3">
-                            {((ongoingClass || nextClass)) && (
-                                <>
-                                    <div className="glass-panel px-6 py-4 rounded-[1.5rem] flex items-center gap-3">
-                                        <Clock className={cn("h-5 w-5", ongoingClass ? "text-red-500" : "text-primary-500")} />
-                                        <span className="text-lg font-bold text-slate-700 tracking-tight font-variant-numeric">
-                                            {ongoingClass ? ongoingClass.end_time.slice(0, 5) : `${nextClass.start_time.slice(0, 5)} - ${nextClass.end_time.slice(0, 5)}`}
+                        {/* Content: Subject Info */}
+                        <div className="relative z-10">
+                            {ongoingClass || nextClass ? (
+                                <div className="mb-10">
+                                    <h2 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter leading-tight mb-3">
+                                        {(ongoingClass || nextClass).subject_name}
+                                    </h2>
+                                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest px-1">
+                                        {(ongoingClass || nextClass).subject_code}
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="mb-10 py-6">
+                                    <h2 className="text-4xl md:text-5xl font-black text-slate-300 tracking-tighter leading-tight">No classes scheduled.</h2>
+                                    <p className="text-sm font-bold text-slate-400 mt-2">Time to relax.</p>
+                                </div>
+                            )}
+
+                            {/* Footer: Metadata Pills - Monochrome */}
+                            {(ongoingClass || nextClass) && (
+                                <div className="flex flex-wrap gap-3">
+                                    <div className="px-5 py-3 rounded-2xl bg-white border border-slate-100 flex items-center gap-3 shadow-sm">
+                                        <Clock className="h-4 w-4 text-slate-400" />
+                                        <span className="text-base font-bold text-slate-700 tabular-nums">
+                                            {ongoingClass
+                                                ? `${ongoingClass.start_time.slice(0, 5)} - ${ongoingClass.end_time.slice(0, 5)}`
+                                                : `${nextClass.start_time.slice(0, 5)} - ${nextClass.end_time.slice(0, 5)}`
+                                            }
                                         </span>
                                     </div>
                                     {(ongoingClass || nextClass).room_number && (
-                                        <div className="glass-panel px-6 py-4 rounded-[1.5rem] flex items-center gap-3">
-                                            <MapPin className="h-5 w-5 text-indigo-500" />
-                                            <span className="text-lg font-bold text-slate-700 tracking-tight">{(ongoingClass || nextClass).room_number}</span>
+                                        <div className="px-5 py-3 rounded-2xl bg-white border border-slate-100 flex items-center gap-3 shadow-sm">
+                                            <MapPin className="h-4 w-4 text-slate-400" />
+                                            <span className="text-base font-bold text-slate-700">
+                                                {(ongoingClass || nextClass).room_number}
+                                            </span>
                                         </div>
                                     )}
-                                </>
+                                </div>
                             )}
                         </div>
                     </div>
+                </div>
 
-                    {/* Widgets Grid */}
+                {/* === RIGHT COLUMN (Stats & Widgets) === */}
+                <div className="lg:col-span-1 space-y-6">
+
+                    {/* Pet Widget (Study Buddy) */}
+                    <div className="hover-lift">
+                        <PetWidget />
+                    </div>
+
+                    {/* 5. STATS STACK - Clean Monochrome */}
+                    <div className="card-base p-8 text-center relative overflow-hidden group hover-lift flex flex-col items-center justify-center bg-white">
+                        <div className="mb-4 p-4 bg-slate-50 rounded-2xl group-hover:scale-110 transition-transform duration-300 shadow-sm">
+                            <Clock className="h-8 w-8 text-slate-900" />
+                        </div>
+                        <div className={cn("text-6xl font-black text-slate-900 tracking-tighter mb-2 tabular-nums", privacyMode && "blur-md select-none")}>
+                            {attendancePercentage}%
+                        </div>
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Attendance</div>
+                    </div>
+
+                    {/* Academics Split Row - Clean Monochrome */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="card-base p-6 flex flex-col items-center justify-center text-center hover-lift bg-white">
+                            <div className={cn("text-3xl font-black text-slate-900 tracking-tighter mb-1", privacyMode && "blur-md select-none")}>
+                                {cgpa > 0 ? cgpa : '-'}
+                            </div>
+                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">CGPA</div>
+                        </div>
+                        <div className="card-base p-6 flex flex-col items-center justify-center text-center hover-lift bg-white">
+                            <div className={cn("text-3xl font-black text-slate-900 tracking-tighter mb-1", privacyMode && "blur-md select-none")}>
+                                {credits > 0 ? credits : '-'}
+                            </div>
+                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Credits</div>
+                        </div>
+                    </div>
+
+                    {/* 6. COMPACT WIDGETS (Countdown only) */}
                     <DndContext
                         sensors={sensors}
                         collisionDetection={closestCenter}
                         onDragEnd={handleDragEnd}
                     >
-                        <SortableContext
-                            items={items}
-                            strategy={rectSortingStrategy}
-                        >
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <SortableContext items={items} strategy={rectSortingStrategy}>
+                            <div className="space-y-4">
                                 {items.map(id => {
-                                    if (id === 'tasks') {
+                                    if (id === 'countdown') {
                                         return (
                                             <SortableWidget key={id} id={id}>
-                                                <div className="glass-vision p-6 rounded-[2rem] hover:scale-[1.02] transition-transform duration-500 h-full">
-                                                    <div className="flex items-center gap-3 mb-4">
-                                                        <span className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-sm"><ListChecks className="h-4 w-4" /></span>
-                                                        <span className="text-base font-bold text-slate-700 tracking-tight">Tasks</span>
-                                                    </div>
-                                                    <MiniTaskWidget />
-                                                </div>
-                                            </SortableWidget>
-                                        );
-                                    } else if (id === 'countdown') {
-                                        return (
-                                            <SortableWidget key={id} id={id}>
-                                                <div className="glass-vision p-6 rounded-[2rem] hover:scale-[1.02] transition-transform duration-500 h-full">
-                                                    <div className="flex items-center gap-3 mb-4">
-                                                        <span className="w-8 h-8 rounded-xl bg-yellow-50 flex items-center justify-center text-yellow-600 shadow-sm"><Clock className="h-4 w-4" /></span>
-                                                        <span className="text-base font-bold text-slate-700 tracking-tight">Countdown</span>
+                                                <div className="bg-white/60 p-6 rounded-[2rem] hover:bg-white transition-colors">
+                                                    <div className="flex items-center justify-between mb-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="p-2 bg-amber-50 rounded-xl text-amber-600"><Clock className="h-4 w-4" /></div>
+                                                            <span className="font-bold text-slate-700">Timer</span>
+                                                        </div>
                                                     </div>
                                                     <CountdownWidget />
                                                 </div>
@@ -322,42 +340,37 @@ export function Dashboard() {
                             </div>
                         </SortableContext>
                     </DndContext>
+
+                    {/* Schedule List (Compact) */}
+                    <div className="bg-white/40 p-6 rounded-[2rem] flex flex-col max-h-[300px]">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-bold text-slate-700">Today's Schedule</h3>
+                            <Link to="/timetable" className="p-2 hover:bg-white rounded-full transition-colors"><ArrowRight className="h-4 w-4 text-slate-400" /></Link>
+                        </div>
+                        <div className="flex-1 overflow-y-auto no-scrollbar space-y-2">
+                            {todayClasses.length > 0 ? (
+                                todayClasses.map((c, i) => {
+                                    const now = new Date();
+                                    const timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+                                    const isCurrent = c.start_time <= timeStr && c.end_time > timeStr;
+                                    return (
+                                        <div key={i} className={cn("p-3 rounded-xl flex items-center justify-between text-sm", isCurrent ? "bg-white shadow-sm" : "text-slate-500")}>
+                                            <span className="font-bold truncate max-w-[120px]">{c.subject_name}</span>
+                                            <span className="font-mono text-xs opacity-70">{c.start_time.slice(0, 5)}</span>
+                                        </div>
+                                    )
+                                })
+                            ) : (
+                                <p className="text-center text-xs text-slate-400 py-4">No classes.</p>
+                            )}
+                        </div>
+                    </div>
+
                 </div>
 
-                {/* Sidebar Column: Stats (4 cols) */}
-                <div className="lg:col-span-4 space-y-6">
-                    {/* Attendance Stack */}
-                    <div className="glass-vision p-6 rounded-[2.5rem] text-center relative overflow-hidden group hover:shadow-2xl transition-all duration-500">
-                        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-400 to-emerald-200"></div>
-                        <div className={cn(
-                            "w-16 h-16 mx-auto rounded-[1.5rem] flex items-center justify-center mb-4 shadow-xl transition-transform group-hover:rotate-12 duration-500",
-                            attendancePercentage < attendanceGoal ? "bg-red-50 text-red-500" : "bg-emerald-50 text-emerald-500"
-                        )}>
-                            <Clock className="h-6 w-6" />
-                        </div>
-                        <div className="text-4xl md:text-5xl font-bold text-slate-800 tracking-tighter mb-2 font-variant-numeric tabular-nums">
-                            {attendancePercentage}%
-                        </div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Attendance</p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="glass-vision p-5 rounded-[2rem] flex flex-col items-center justify-center hover:-translate-y-2 transition-transform duration-500">
-                            <div className="text-3xl font-bold text-slate-800 tracking-tighter font-variant-numeric">{cgpa > 0 ? cgpa : '-'}</div>
-                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">CGPA</div>
-                        </div>
-                        <div className="glass-vision p-5 rounded-[2rem] flex flex-col items-center justify-center hover:-translate-y-2 transition-transform duration-500">
-                            <div className="text-3xl font-bold text-slate-800 tracking-tighter font-variant-numeric">{credits > 0 ? credits : '-'}</div>
-                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">Credits</div>
-                        </div>
-                    </div>
-
-                    <div className="glass-vision p-0 rounded-[2.5rem] overflow-hidden">
-                        <StickyNoteWidget />
-                    </div>
-                </div>
             </div>
 
+            {/* Vault Modal */}
             {SubjectVault && vaultSubject && (
                 <SubjectVault
                     isOpen={isVaultOpen}
@@ -366,8 +379,6 @@ export function Dashboard() {
                     subjectCode={vaultSubject.code}
                 />
             )}
-
-
         </div>
     );
 }

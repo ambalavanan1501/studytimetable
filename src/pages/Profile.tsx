@@ -2,17 +2,17 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Settings, ChevronRight, Loader2, Palette, GraduationCap, Target, Trash2, Download, FileText, Sparkles, RefreshCw, Trophy, Calendar } from 'lucide-react';
+import { LogOut, Settings, Loader2, Palette, Trash2, Download, FileText, Calendar, Shield, Bell, Lock, EyeOff, Eye } from 'lucide-react';
 import { EditProfileModal } from '../components/profile/EditProfileModal';
 import { AppSettingsModal } from '../components/profile/AppSettingsModal';
 import { ManageCoursesModal } from '../components/profile/ManageCoursesModal';
 import { cn } from '../lib/utils';
-import { fetchAIQuote, AIQuoteResponse } from '../lib/ai';
 import { SEO } from '../components/SEO';
 import { useTheme } from '../context/ThemeContext';
 import { exportDataAsJSON, generatePDFReport } from '../lib/export';
 import { useToast } from '../context/ToastContext';
 import { useGamification } from '../context/GamificationContext';
+import { useSettings } from '../context/SettingsContext';
 
 interface ProfileData {
     full_name: string | null;
@@ -28,45 +28,28 @@ interface ProfileData {
     avatar_url: string | null;
 }
 
-const THEMES = [
-    { name: 'Purple', value: 'purple', class: 'bg-purple-500' },
-    { name: 'Blue', value: 'blue', class: 'bg-blue-500' },
-    { name: 'Green', value: 'green', class: 'bg-emerald-500' },
-    { name: 'Orange', value: 'orange', class: 'bg-orange-500' },
-    { name: 'Pink', value: 'pink', class: 'bg-pink-500' },
-];
+
 
 export function Profile() {
     const { user } = useAuth();
-    const { setTheme } = useTheme();
+    const { themeStyle, setThemeStyle, mode, setMode, setAccent } = useTheme();
     const { addToast } = useToast();
     const { level, xp } = useGamification();
+    const {
+        privacyMode, setPrivacyMode,
+        appLockEnabled, setAppLockEnabled, setAppPin,
+        notificationsEnabled, setNotificationsEnabled
+    } = useSettings();
     const navigate = useNavigate();
     const [profile, setProfile] = useState<ProfileData | null>(null);
     const [loading, setLoading] = useState(true);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
     const [isManageCoursesModalOpen, setIsManageCoursesModalOpen] = useState(false);
-    const [quote, setQuote] = useState<AIQuoteResponse | null>(null);
-    const [isQuoteLoading, setIsQuoteLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [exporting, setExporting] = useState(false);
 
-    const loadQuote = async () => {
-        try {
-            setIsQuoteLoading(true);
-            const data = await fetchAIQuote();
-            setQuote(data);
-        } catch (error) {
-            console.error("Failed to load quote", error);
-        } finally {
-            setIsQuoteLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        loadQuote();
-    }, []);
+    // Removed Quote Logic as per user request
 
     const fetchProfile = async () => {
         if (!user) return;
@@ -97,7 +80,7 @@ export function Profile() {
             };
             setProfile(profileData);
 
-            if (profileData.accent_color) setTheme(profileData.accent_color as any);
+            if (profileData.accent_color) setAccent(profileData.accent_color as any);
         } catch (error) {
             console.error('Error:', error);
         } finally {
@@ -114,26 +97,29 @@ export function Profile() {
         navigate('/login');
     };
 
-    const handleThemeChange = async (color: string) => {
-        if (!user || !profile) return;
-        setTheme(color as any);
-        setProfile({ ...profile, accent_color: color });
-
-        await supabase
-            .from('profiles')
-            .update({ accent_color: color })
-            .eq('id', user.id);
-    };
-
-    const handleAttendanceGoalChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!user || !profile) return;
-        const goal = parseInt(e.target.value);
-        setProfile({ ...profile, attendance_goal: goal });
-
-        await supabase
-            .from('profiles')
-            .update({ attendance_goal: goal })
-            .eq('id', user.id);
+    const handleAppLockToggle = () => {
+        if (!appLockEnabled) {
+            // Enabling
+            const pin = prompt("Set your 4-digit PIN:");
+            if (pin && pin.length === 4 && /^\d+$/.test(pin)) {
+                setAppPin(pin);
+                setAppLockEnabled(true);
+                addToast('App Lock enabled!', 'success');
+            } else if (pin) {
+                addToast('Invalid PIN. Must be 4 digits.', 'error');
+            }
+        } else {
+            // Disabling
+            const pin = prompt("Enter PIN to disable:");
+            const storedPin = localStorage.getItem('app-pin');
+            if (pin === storedPin) {
+                setAppLockEnabled(false);
+                setAppPin(null);
+                addToast('App Lock disabled.', 'success');
+            } else {
+                addToast('Incorrect PIN.', 'error');
+            }
+        }
     };
 
     const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -239,196 +225,194 @@ export function Profile() {
                 <p className="text-lg text-slate-500 font-medium font-display tracking-wide">Identity & Preferences.</p>
             </div>
 
-            {/* NikiOS Profile Hero */}
-            <div className="glass-vision rounded-[2.5rem] p-8 flex flex-col items-center text-center relative overflow-hidden group shadow-2xl">
-                {/* Top Controls */}
-                <div className="absolute top-8 right-8 z-20">
-                    <button
-                        onClick={() => setIsEditModalOpen(true)}
-                        className="glass-button p-3 rounded-full text-slate-500 hover:text-slate-900 shadow-lg"
-                    >
-                        <Settings className="h-6 w-6" />
-                    </button>
+            {/* Bento Grid Layout */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-min">
+
+                {/* 1. Hero Card - Full Width on Mobile, 2 Cols on Desktop */}
+                <div className="md:col-span-2 glass-vision rounded-[2.5rem] p-8 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-slate-900/5 blur-3xl rounded-full -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+
+                    <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
+                        {/* Avatar */}
+                        <div className="relative group/avatar">
+                            <div className="w-32 h-32 rounded-full ring-8 ring-white/30 shadow-2xl overflow-hidden relative cursor-pointer">
+                                {profile?.avatar_url ? (
+                                    <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="w-full h-full bg-slate-100 flex items-center justify-center text-4xl font-bold text-slate-400">
+                                        {profile?.full_name?.[0] || user?.email?.[0]?.toUpperCase()}
+                                    </div>
+                                )}
+                                <label className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity cursor-pointer backdrop-blur-[2px]">
+                                    <span className="text-white text-xs font-bold uppercase tracking-wider">{uploading ? '...' : 'Change'}</span>
+                                    <input type="file" accept="image/*" onChange={handleImageUpload} disabled={uploading} className="hidden" />
+                                </label>
+                            </div>
+                            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 glass-panel px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest text-slate-500 shadow-lg whitespace-nowrap flex gap-2">
+                                <span>Lvl {level}</span>
+                                <span className="text-indigo-500">{xp} XP</span>
+                            </div>
+                        </div>
+
+                        {/* Info */}
+                        <div className="text-center md:text-left space-y-2">
+                            <div>
+                                <h2 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight leading-none">{profile?.full_name || 'Student'}</h2>
+                                <p className="text-slate-500 font-medium">{user?.email}</p>
+                            </div>
+                            <div className="flex flex-wrap justify-center md:justify-start gap-2 pt-2">
+                                <button onClick={() => setIsEditModalOpen(true)} className="glass-button px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 text-slate-600 hover:text-slate-900">
+                                    <Settings className="h-3 w-3" />
+                                    Edit Profile
+                                </button>
+                                <button onClick={handleSignOut} className="glass-button px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 text-red-500 hover:bg-red-50">
+                                    <LogOut className="h-3 w-3" />
+                                    Sign Out
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div className="relative z-10 mb-6 group-hover:scale-105 transition-transform duration-700">
-                    <div className="w-28 h-28 rounded-full flex items-center justify-center text-white text-4xl font-bold shadow-2xl ring-8 ring-white/30 overflow-hidden relative animate-breathe cursor-pointer">
-                        {profile?.avatar_url ? (
-                            <img
-                                src={profile.avatar_url}
-                                alt="Avatar"
-                                className="w-full h-full object-cover"
-                            />
-                        ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                                {profile?.full_name ? profile.full_name[0].toUpperCase() : user?.email?.[0].toUpperCase()}
-                            </div>
-                        )}
-                        <label className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-all cursor-pointer backdrop-blur-[2px]">
-                            <span className="text-white text-xs font-bold uppercase tracking-wider">
-                                {uploading ? '...' : 'Change'}
-                            </span>
+                {/* 2. Appearance Studio (Moved up to replace Goal) */}
+                <div className="md:col-span-1 glass-vision rounded-[2.5rem] p-6 flex flex-col gap-6 justify-center">
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-pink-50 text-pink-500 flex items-center justify-center"><Palette className="h-4 w-4" /></div>
+                        <h3 className="font-bold text-slate-900">Appearance</h3>
+                    </div>
+
+                    {/* Style Selector */}
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Visual Style</label>
+                        <div className="grid grid-cols-3 gap-2">
+                            {['spatial', 'neo', 'swiss'].map((s) => (
+                                <button
+                                    key={s}
+                                    onClick={() => setThemeStyle(s as any)}
+                                    className={cn(
+                                        "px-2 py-2 rounded-xl text-xs font-bold transition-all border-2",
+                                        themeStyle === s
+                                            ? "border-slate-900 bg-slate-900 text-white"
+                                            : "border-transparent bg-slate-100 text-slate-500 hover:bg-slate-200"
+                                    )}
+                                >
+                                    {s.charAt(0).toUpperCase() + s.slice(1)}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Mode Selector */}
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100 transition-colors hover:bg-slate-100">
+                        <span className="text-sm font-bold text-slate-600">Dark Mode</span>
+                        <label className="relative inline-flex items-center cursor-pointer">
                             <input
-                                type="file"
-                                accept="image/*"
-                                onChange={handleImageUpload}
-                                disabled={uploading}
-                                className="hidden"
+                                type="checkbox"
+                                className="sr-only peer"
+                                checked={mode === 'dark'}
+                                onChange={(e) => setMode(e.target.checked ? 'dark' : 'light')}
                             />
+                            <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-900"></div>
                         </label>
                     </div>
-                    {(profile?.university || profile?.branch) && (
-                        <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 glass-panel px-4 py-1.5 rounded-full shadow-lg border border-white/60 flex items-center gap-2 whitespace-nowrap">
-                            <GraduationCap className="h-4 w-4 text-indigo-500" />
-                            <span className="text-sm font-bold text-slate-800">{profile.branch || 'Student'}</span>
-                        </div>
-                    )}
                 </div>
 
-                <div className="relative z-10 mt-6 space-y-1">
-                    <h2 className="text-3xl font-bold text-slate-900 tracking-tight">
-                        {profile?.full_name || 'Student'}
-                    </h2>
-                    <p className="text-lg text-slate-500 font-medium">{user?.email}</p>
-                </div>
-
-                {/* Level Pills */}
-                <div className="flex items-center justify-center gap-4 mt-8">
-                    <div className="glass-panel px-5 py-2 rounded-2xl flex items-center gap-2 text-indigo-700 bg-indigo-50/50 border-indigo-100/50">
-                        <Trophy className="h-5 w-5 text-indigo-500" />
-                        <span className="font-bold">Lvl {level}</span>
-                        <span className="w-1 h-1 bg-indigo-300 rounded-full"></span>
-                        <span className="font-bold">{xp} XP</span>
+                {/* 3. Control Center - Expanded to Full Width Row */}
+                <div className="md:col-span-3 glass-vision rounded-[2.5rem] p-8">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center"><Shield className="h-5 w-5" /></div>
+                        <h3 className="text-lg font-bold text-slate-900">Control Center</h3>
                     </div>
-                    {profile?.cgpa && profile.cgpa > 0 && (
-                        <div className="glass-panel px-5 py-2 rounded-2xl text-emerald-700 font-bold bg-emerald-50/50 border-emerald-100/50">
-                            CGPA {profile.cgpa}
-                        </div>
-                    )}
-                </div>
-            </div>
 
-            {/* AI Quote - Minimal */}
-            <div className="glass-vision p-6 rounded-[2rem] relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity duration-500">
-                    <Sparkles className="h-40 w-40 text-slate-900 rotate-12" />
-                </div>
-                <div className="relative z-10">
-                    <div className="flex justify-between items-start mb-4">
-                        <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                            Daily Inspiration
-                        </h3>
-                        <button onClick={loadQuote} className="glass-button p-2 rounded-full"><RefreshCw className={cn("h-4 w-4", isQuoteLoading && "animate-spin")} /></button>
-                    </div>
-                    {isQuoteLoading && !quote ? (
-                        <div className="animate-pulse space-y-2">
-                            <div className="h-6 bg-slate-200 rounded-full w-2/3"></div>
-                            <div className="h-4 bg-slate-200 rounded-full w-1/3"></div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {/* Privacy Toggle */}
+                        <div className="flex items-center justify-between p-4 rounded-2xl bg-white/40 border border-white/50">
+                            <div className="flex items-center gap-3">
+                                <div className={cn("w-10 h-10 rounded-full flex items-center justify-center transition-colors", privacyMode ? "bg-slate-800 text-white" : "bg-slate-100 text-slate-500")}>
+                                    {privacyMode ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                                </div>
+                                <div>
+                                    <span className="block font-bold text-slate-700">Privacy Mode</span>
+                                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Blur Stats</span>
+                                </div>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" className="sr-only peer" checked={privacyMode} onChange={(e) => setPrivacyMode(e.target.checked)} />
+                                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-800"></div>
+                            </label>
                         </div>
-                    ) : (
-                        <div className="md:pr-20">
-                            <p className="text-3xl md:text-4xl font-serif italic text-slate-800 leading-tight">
-                                "{quote?.quote || "Believe you can and you're halfway there."}"
-                            </p>
-                            <p className="text-slate-500 font-bold mt-4 uppercase tracking-widest text-sm">— {quote?.author || "Theodore Roosevelt"}</p>
-                        </div>
-                    )}
-                </div>
-            </div>
 
-            {/* Settings Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Appearance */}
-                <div className="glass-vision p-6 rounded-[2rem]">
-                    <div className="flex items-center gap-4 mb-6">
-                        <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-sm"><Palette className="h-6 w-6" /></div>
-                        <div>
-                            <span className="block text-xl font-bold text-slate-900">Theme</span>
-                            <span className="text-slate-500 text-sm">Personalize accent</span>
+                        {/* App Lock Toggle */}
+                        <div className="flex items-center justify-between p-4 rounded-2xl bg-white/40 border border-white/50">
+                            <div className="flex items-center gap-3">
+                                <div className={cn("w-10 h-10 rounded-full flex items-center justify-center transition-colors", appLockEnabled ? "bg-red-500 text-white" : "bg-red-50 text-red-400")}>
+                                    <Lock className="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <span className="block font-bold text-slate-700">App Lock</span>
+                                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">PIN Security</span>
+                                </div>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" className="sr-only peer" checked={appLockEnabled} onChange={handleAppLockToggle} />
+                                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
+                            </label>
+                        </div>
+
+                        {/* Notifications Toggle */}
+                        <div className="flex items-center justify-between p-4 rounded-2xl bg-amber-50/50 border border-amber-100/50">
+                            <div className="flex items-center gap-3">
+                                <div className={cn("w-10 h-10 rounded-full flex items-center justify-center transition-colors", notificationsEnabled ? "bg-amber-500 text-white" : "bg-white text-amber-500")}>
+                                    <Bell className="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <span className="block font-bold text-slate-700">Class Alerts</span>
+                                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Browser Nots</span>
+                                </div>
+                            </div>
+                            <div className="flex gap-4">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <span className="text-xs font-bold text-slate-500">Enable</span>
+                                    <div className="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" className="sr-only peer" checked={notificationsEnabled} onChange={(e) => setNotificationsEnabled(e.target.checked)} />
+                                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                                    </div>
+                                </label>
+                            </div>
                         </div>
                     </div>
-                    <div className="flex gap-3">
-                        {THEMES.map((theme) => (
-                            <button
-                                key={theme.value}
-                                onClick={() => handleThemeChange(theme.value)}
-                                className={cn(
-                                    "w-12 h-12 rounded-full transition-all duration-300 flex items-center justify-center shadow-sm hover:scale-110",
-                                    theme.class,
-                                    profile?.accent_color === theme.value ? "ring-[6px] ring-white shadow-xl scale-110" : "opacity-60"
-                                )}
-                            />
+                </div>
+
+
+
+                {/* 6. Quick Actions Dock */}
+                <div className="md:col-span-3">
+                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest ml-4 mb-4">Quick Actions</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {[
+                            { icon: Calendar, label: "Timetable", sub: "Manage", action: () => setIsManageCoursesModalOpen(true), color: "bg-indigo-500" },
+                            { icon: FileText, label: "Report", sub: "Export PDF", action: handleExportPDF, color: "bg-blue-500" },
+                            { icon: Download, label: "Backup", sub: "Save JSON", action: handleExportJSON, color: "bg-sky-500" },
+                            { icon: Trash2, label: "Reset", sub: "Clear Data", action: handleResetData, color: "bg-red-500" }
+                        ].map((item, i) => (
+                            <button key={i} onClick={item.action} className="glass-vision p-4 rounded-[2rem] flex items-center gap-4 hover:bg-white/60 transition-all hover:-translate-y-1 group">
+                                <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform group-hover:scale-110", item.color)}>
+                                    {item.label === 'Report' && exporting ? <Loader2 className="h-5 w-5 animate-spin" /> : <item.icon className="h-5 w-5" />}
+                                </div>
+                                <div className="text-left">
+                                    <span className="block font-bold text-slate-900">{item.label}</span>
+                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{item.sub}</span>
+                                </div>
+                            </button>
                         ))}
                     </div>
                 </div>
 
-                {/* Goals */}
-                <div className="glass-vision p-6 rounded-[2rem]">
-                    <div className="flex items-center gap-4 mb-6 justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm"><Target className="h-6 w-6" /></div>
-                            <div>
-                                <span className="block text-xl font-bold text-slate-900">Goal</span>
-                                <span className="text-slate-500 text-sm">Attendance Target</span>
-                            </div>
-                        </div>
-                        <span className="text-3xl font-black text-emerald-500">{profile?.attendance_goal}%</span>
-                    </div>
-                    <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={profile?.attendance_goal || 75}
-                        onChange={handleAttendanceGoalChange}
-                        className="w-full h-3 bg-slate-100 rounded-full appearance-none cursor-pointer accent-emerald-500 hover:accent-emerald-400 transition-all"
-                    />
-                </div>
-            </div>
-
-            {/* Actions List */}
-            <div className="space-y-4">
-                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest ml-4">Quick Actions</h3>
-                <div className="glass-vision p-2 rounded-[2.5rem] grid gap-2">
-                    {[
-                        { icon: Calendar, label: "Manage Timetable", sub: "Add or edit classes", action: () => setIsManageCoursesModalOpen(true), color: "purple" },
-                        { icon: FileText, label: "Export Report", sub: "Download PDF summary", action: handleExportPDF, color: "blue" },
-                        { icon: Download, label: "Backup Data", sub: "Save as JSON", action: handleExportJSON, color: "sky" },
-                        { icon: Trash2, label: "Reset All Data", sub: "Clear database", action: handleResetData, color: "red" }
-                    ].map((item, i) => (
-                        <button
-                            key={i}
-                            onClick={item.action}
-                            className="w-full p-6 flex items-center justify-between hover:bg-white/50 rounded-[2rem] transition-all group"
-                        >
-                            <div className="flex items-center gap-6">
-                                <div className={cn(
-                                    "w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform group-hover:scale-110",
-                                    `bg-${item.color}-500`
-                                )}>
-                                    {item.label === 'Export Report' && exporting ? <Loader2 className="h-6 w-6 animate-spin" /> : <item.icon className="h-6 w-6" />}
-                                </div>
-                                <div className="text-left">
-                                    <span className="block text-lg font-bold text-slate-800">{item.label}</span>
-                                    <span className="text-slate-500 font-medium">{item.sub}</span>
-                                </div>
-                            </div>
-                            <ChevronRight className="h-6 w-6 text-slate-300 group-hover:text-slate-900 transition-colors" />
-                        </button>
-                    ))}
-                </div>
             </div>
 
             <div className="text-center py-8">
-                <p className="text-xs font-bold uppercase tracking-widest text-slate-300">TT Tracker v10.5 NikiOS</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-300">NikiOS v11.0 • Designed by Antigravity</p>
             </div>
-
-            <button
-                onClick={handleSignOut}
-                className="w-full glass-button p-5 rounded-[2rem] flex items-center justify-center gap-3 text-red-500 font-bold hover:bg-red-50/50"
-            >
-                <LogOut className="h-5 w-5" />
-                Sign Out
-            </button>
 
             <EditProfileModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} currentProfile={profile} onSuccess={fetchProfile} />
             <AppSettingsModal isOpen={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} />

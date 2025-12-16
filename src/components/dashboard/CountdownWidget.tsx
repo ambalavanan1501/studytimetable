@@ -42,15 +42,15 @@ export function CountdownWidget() {
     };
 
     return (
-        <div className="glass-card p-5 rounded-3xl relative group h-full flex flex-col bg-blue-50/30 border-blue-100/50">
+        <div className="card-base p-5 rounded-3xl relative group h-full flex flex-col">
             <div className="flex justify-between items-center mb-4">
                 <h3 className="font-bold text-slate-700 flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-blue-500" />
+                    <Clock className="h-4 w-4 text-slate-400" />
                     Countdown
                 </h3>
                 <button
                     onClick={() => navigate('/countdown')}
-                    className="p-1.5 rounded-full hover:bg-blue-100 text-slate-400 hover:text-blue-600 transition-colors"
+                    className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-900 transition-colors"
                 >
                     <ArrowUpRight className="h-4 w-4" />
                 </button>

@@ -4,59 +4,157 @@
 
 @layer base {
   :root {
-    /* NikiOS Theme Tokens */
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
-
-    /* Glass Tokens */
-    --glass-border: 255 255 255;
-    --glass-surface: 255 255 255;
-
-    /* Aurora Gradient Colors */
-    --aurora-1: 238 100% 96%;
-    /* Soft Indigo */
-    --aurora-2: 220 100% 96%;
-    /* Soft Blue */
-    --aurora-3: 280 100% 96%;
-    /* Soft Purple */
-    --aurora-4: 180 100% 96%;
-    /* Soft Cyan */
-
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    /* === 1. GLOBAL BASE TOKENS (Shared) === */
     --primary: 256 60% 58%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222 47% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222 47% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
+    /* Default Purple */
     --ring: 256 60% 58%;
-    --radius: 1.5rem;
-    /* Hyper-rounded squircles */
 
-    /* Extended Palette */
-    --primary-50: 250 60% 99%;
-    --primary-100: 251 58% 95%;
-    --primary-200: 250 56% 90%;
-    --primary-300: 250 54% 82%;
-    --primary-400: 252 56% 70%;
-    --primary-500: 256 60% 58%;
-    --primary-600: 260 60% 50%;
-    --primary-700: 262 62% 42%;
+    /* Default Aurora (Light) */
+    --aurora-1: 238 100% 96%;
+    --aurora-2: 220 100% 96%;
+    --aurora-3: 280 100% 96%;
+    --aurora-4: 180 100% 96%;
   }
 
-  .dark {
-    /* Enforce Light Mode Variables even in dark */
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
+  /* === 2. ACCENT COLORS === */
+  [data-theme-accent='purple'] {
+    --primary: 256 60% 58%;
+    --ring: 256 60% 58%;
+  }
+
+  [data-theme-accent='blue'] {
+    --primary: 221 83% 53%;
+    --ring: 221 83% 53%;
+  }
+
+  [data-theme-accent='green'] {
+    --primary: 158 64% 52%;
+    --ring: 158 64% 52%;
+  }
+
+  [data-theme-accent='orange'] {
+    --primary: 24 95% 53%;
+    --ring: 24 95% 53%;
+  }
+
+  [data-theme-accent='pink'] {
+    --primary: 330 81% 60%;
+    --ring: 330 81% 60%;
+  }
+
+  /* === 3. VISUAL STYLE MATRIX === */
+
+  /* --- STYLE 1: SPATIAL (Glass, Blur, Deep Depth) --- */
+  :root[data-theme-style="spatial"] {
+    --bg-base: 210 40% 98%;
+    --fg-base: 222 47% 11%;
+
+    --card-bg: 255 255 255;
+    --card-opacity: 0.4;
+    --card-border: 255 255 255;
+    --card-border-opacity: 0.4;
+    --card-radius: 2.5rem;
+    --card-blur: 40px;
+    --card-shadow: 0 20px 40px rgba(0, 0, 0, 0.08), 0 10px 20px rgba(0, 0, 0, 0.05);
+
+    --input-bg: 255 255 255;
+    --input-opacity: 0.6;
+    --input-radius: 1.5rem;
+
+    --font-heading: 'Outfit', sans-serif;
+  }
+
+  /* --- STYLE 2: NEO-BRUTALISM (Solid, Borders, Pop) --- */
+  :root[data-theme-style="neo"] {
+    --bg-base: 210 40% 98%;
+    /* Can be brighter */
+    --fg-base: 0 0% 0%;
+    /* Pitch Black */
+
+    --card-bg: 255 255 255;
+    --card-opacity: 1;
+    --card-border: 0 0% 0%;
+    --card-border-opacity: 1;
+    --card-radius: 0.75rem;
+    --card-blur: 0px;
+    --card-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 1);
+
+    --input-bg: 255 255 255;
+    --input-opacity: 1;
+    --input-radius: 0.5rem;
+
+    --font-heading: 'Space Grotesk', sans-serif;
+  }
+
+  /* --- STYLE 3: SWISS (Minimal, Grid, Clean) --- */
+  :root[data-theme-style="swiss"] {
+    --bg-base: 0 0% 100%;
+    --fg-base: 0 0% 10%;
+
+    --card-bg: 248 250 252;
+    /* Slate 50 */
+    --card-opacity: 1;
+    --card-border: 226 232 240;
+    /* Slate 200 */
+    --card-border-opacity: 1;
+    --card-radius: 0px;
+    /* Sharp or Micro 2px */
+    --card-blur: 0px;
+    --card-shadow: none;
+
+    --input-bg: 255 255 255;
+    --input-opacity: 1;
+    --input-radius: 0px;
+
+    --font-heading: 'Inter', sans-serif;
+  }
+
+
+  /* === 4. DARK MODE OVERRIDES === */
+  .dark[data-theme-style="spatial"] {
+    --bg-base: 222 47% 11%;
+    --fg-base: 210 40% 98%;
+
+    --card-bg: 20 20 30;
+    --card-opacity: 0.4;
+    --card-border: 255 255 255;
+    --card-border-opacity: 0.1;
+
+    /* Dark Aurora */
+    --aurora-1: 260 50% 10%;
+    --aurora-2: 240 50% 12%;
+    --aurora-3: 280 50% 10%;
+    --aurora-4: 200 50% 12%;
+  }
+
+  .dark[data-theme-style="neo"] {
+    --bg-base: 20 20 22;
+    --fg-base: 255 255 255;
+
+    --card-bg: 30 30 35;
+    --card-border: 255 255 255;
+    /* White borders in dark neo */
+    --card-shadow: 4px 4px 0px 0px rgba(255, 255, 255, 1);
+    /* White shadow */
+
+    --aurora-1: 0 0% 10%;
+    --aurora-2: 0 0% 10%;
+    --aurora-3: 0 0% 10%;
+    --aurora-4: 0 0% 10%;
+    /* Disable Aurora */
+  }
+
+  .dark[data-theme-style="swiss"] {
+    --bg-base: 5 5 5;
+    --fg-base: 255 255 255;
+
+    --card-bg: 15 15 15;
+    --card-border: 40 40 40;
+
+    --aurora-1: 0 0% 0%;
+    --aurora-2: 0 0% 0%;
+    --aurora-3: 0 0% 0%;
+    --aurora-4: 0 0% 0%;
   }
 }
 
@@ -66,8 +164,11 @@
   }
 
   body {
-    @apply bg-background text-foreground transition-all duration-500 antialiased selection:bg-primary-100 selection:text-primary-900;
-    /* Aurora Background Layer */
+    background-color: hsl(var(--bg-base));
+    color: hsl(var(--fg-base));
+    transition: all 0.5s ease;
+
+    /* Aurora Background (Applied only if variables are set) */
     background-image:
       radial-gradient(at 0% 0%, hsl(var(--aurora-1)) 0px, transparent 50%),
       radial-gradient(at 100% 0%, hsl(var(--aurora-2)) 0px, transparent 50%),
@@ -76,6 +177,59 @@
     background-attachment: fixed;
     background-size: 200% 200%;
     animation: aurora 20s ease infinite alternate;
+  }
+}
+
+/* === 5. COMPONENT CLASSES (Semantic) === */
+
+@layer components {
+
+  /* The main visual surface for content */
+  .card-base {
+    background-color: rgb(var(--card-bg) / var(--card-opacity));
+    backdrop-filter: blur(var(--card-blur));
+    border: 1px solid rgb(var(--card-border) / var(--card-border-opacity));
+    border-radius: var(--card-radius);
+    box-shadow: var(--card-shadow);
+    transition: all 0.3s ease;
+  }
+
+  .card-base:hover {
+    /* Only elevate if it has shadow (Neo/Spatial) */
+    /* Neo offset increases */
+    /* Spatial glow increases */
+  }
+
+  /* Branded Button */
+  .btn-primary {
+    @apply bg-primary text-white font-bold flex items-center justify-center gap-2 transition-all active:scale-95;
+    border-radius: var(--input-radius);
+  }
+
+  /* If Neo, add border to button */
+  :root[data-theme-style="neo"] .btn-primary {
+    border: 2px solid black;
+    box-shadow: 3px 3px 0 0 black;
+  }
+
+  .dark[data-theme-style="neo"] .btn-primary {
+    border: 2px solid white;
+    box-shadow: 3px 3px 0 0 white;
+    color: black;
+    /* Invert text for contrast if needed */
+  }
+
+  /* Standard Input */
+  .input-base {
+    background-color: rgb(var(--input-bg) / var(--input-opacity));
+    border-radius: var(--input-radius);
+    border: 1px solid rgb(var(--card-border) / var(--card-border-opacity));
+    padding: 0.75rem 1rem;
+    outline: none;
+  }
+
+  :root[data-theme-style="neo"] .input-base {
+    border: 2px solid black;
   }
 }
 
@@ -106,26 +260,8 @@
   }
 }
 
-@keyframes breathe {
-
-  0%,
-  100% {
-    opacity: 0.8;
-    transform: scale(1);
-  }
-
-  50% {
-    opacity: 1;
-    transform: scale(1.02);
-  }
-}
-
 .animate-float {
   animation: float 6s ease-in-out infinite;
-}
-
-.animate-breathe {
-  animation: breathe 4s ease-in-out infinite;
 }
 
 @keyframes fade-in-up {
@@ -142,44 +278,4 @@
 
 .animate-fade-in-up {
   animation: fade-in-up 0.6s ease-out forwards;
-}
-
-/* NikiOS Glass Utilities */
-.glass-vision {
-  @apply bg-white/40 backdrop-blur-[40px] border border-white/40;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08), 0 10px 20px rgba(0, 0, 0, 0.05);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.1) 100%);
-}
-
-.glass-panel {
-  @apply bg-white/60 backdrop-blur-3xl border border-white/50 shadow-md transition-all duration-500 hover:shadow-xl;
-}
-
-.glass-button {
-  @apply bg-white/50 backdrop-blur-xl border border-white/40 shadow-sm hover:bg-white/80 active:scale-95 transition-all duration-300 hover:shadow-lg;
-}
-
-/* Typography Enhancements */
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  @apply tracking-tight text-slate-800;
-  font-feature-settings: "ss01", "ss02", "cv01";
-}
-
-.display-text {
-  @apply text-3xl md:text-5xl font-semibold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-slate-800 to-slate-500;
-}
-
-/* Hide Scrollbar */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
 }

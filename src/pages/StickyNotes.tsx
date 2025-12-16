@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Plus, Trash2, Upload, FileJson, FileText } from 'lucide-react';
+import { Plus, Trash2, Upload, FileJson, FileText, StickyNote } from 'lucide-react';
 import { db } from '../lib/db';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { cn } from '../lib/utils';
+import { SEO } from '../components/SEO';
 
 interface Note {
     id: string;
@@ -22,7 +24,6 @@ export function StickyNotes() {
     const loadNotes = async () => {
         try {
             const data = await db.getAllNotes();
-            // Sort by date desc
             setNotes(data.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()));
         } catch (error) {
             console.error("Failed to load notes", error);
@@ -98,7 +99,6 @@ export function StickyNotes() {
                 const importedNotes = JSON.parse(e.target?.result as string);
                 if (Array.isArray(importedNotes)) {
                     for (const note of importedNotes) {
-                        // Ensure dates are parsed back to Date objects
                         const parsedNote = {
                             ...note,
                             updatedAt: new Date(note.updatedAt)
@@ -118,37 +118,37 @@ export function StickyNotes() {
 
     return (
         <div className="min-h-screen p-2 md:p-6 pb-24 space-y-8">
+            <SEO title="Sticky Notes" description="Quick thoughts." />
+
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
                     <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">Sticky Notes</h1>
-                    <p className="text-slate-400 font-medium md:-mt-1 text-sm">Capture your thougths instantly.</p>
+                    <p className="text-slate-400 font-medium md:-mt-1 text-sm">Capture your thoughts.</p>
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
                     <button
                         onClick={exportJSON}
-                        className="flex items-center gap-2 bg-white text-slate-600 px-4 py-2.5 rounded-xl hover:bg-slate-50 hover:text-primary-600 transition-all shadow-sm border border-slate-100 font-bold text-sm group"
-                        title="Export JSON"
+                        className="flex items-center gap-2 bg-white text-slate-600 px-4 py-2.5 rounded-xl hover:bg-slate-50 transition-all shadow-sm border border-slate-200 font-bold text-sm"
                     >
-                        <FileJson className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                        <FileJson className="h-4 w-4" />
                         <span className="hidden sm:inline">JSON</span>
                     </button>
                     <button
                         onClick={exportPDF}
-                        className="flex items-center gap-2 bg-white text-slate-600 px-4 py-2.5 rounded-xl hover:bg-slate-50 hover:text-primary-600 transition-all shadow-sm border border-slate-100 font-bold text-sm group"
-                        title="Export PDF"
+                        className="flex items-center gap-2 bg-white text-slate-600 px-4 py-2.5 rounded-xl hover:bg-slate-50 transition-all shadow-sm border border-slate-200 font-bold text-sm"
                     >
-                        <FileText className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                        <FileText className="h-4 w-4" />
                         <span className="hidden sm:inline">PDF</span>
                     </button>
-                    <label className="flex items-center gap-2 bg-white text-slate-600 px-4 py-2.5 rounded-xl hover:bg-slate-50 hover:text-primary-600 transition-all shadow-sm border border-slate-100 font-bold text-sm cursor-pointer group">
-                        <Upload className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                    <label className="flex items-center gap-2 bg-white text-slate-600 px-4 py-2.5 rounded-xl hover:bg-slate-50 transition-all shadow-sm border border-slate-200 font-bold text-sm cursor-pointer">
+                        <Upload className="h-4 w-4" />
                         <span className="hidden sm:inline">Import</span>
                         <input type="file" accept=".json" onChange={importJSON} className="hidden" />
                     </label>
                     <button
                         onClick={handleAddNote}
-                        className="flex items-center gap-2 bg-slate-800 text-white px-6 py-2.5 rounded-xl hover:bg-slate-900 transition-all shadow-lg shadow-slate-300 ml-2 hover:translate-y-[-2px] active:scale-95"
+                        className="flex items-center gap-2 bg-slate-900 text-white px-6 py-2.5 rounded-xl hover:bg-slate-800 transition-all shadow-lg shadow-slate-300 ml-2"
                     >
                         <Plus className="h-5 w-5" />
                         <span className="font-bold">New Note</span>
@@ -158,48 +158,46 @@ export function StickyNotes() {
 
             {loading ? (
                 <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500 mb-4"></div>
-                    <p className="font-medium animate-pulse">Loading notes...</p>
+                    <div className="animate-pulse">Loading notes...</div>
                 </div>
             ) : notes.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-32 text-center">
-                    <div className="w-24 h-24 bg-yellow-50 rounded-[2rem] flex items-center justify-center mb-6 shadow-inner ring-1 ring-yellow-100">
-                        <FileText className="h-10 w-10 text-yellow-500 opacity-50" />
+                    <div className="w-20 h-20 bg-amber-50 rounded-2xl flex items-center justify-center mb-6 border border-amber-100">
+                        <StickyNote className="h-8 w-8 text-amber-400" />
                     </div>
-                    <h3 className="text-xl font-bold text-slate-700">Your mind is clear</h3>
-                    <p className="text-slate-400 font-medium mb-8 max-w-xs mx-auto">Create a note to remember ideas, tasks, or important info.</p>
-                    <button
-                        onClick={handleAddNote}
-                        className="text-primary-600 font-bold hover:bg-primary-50 px-6 py-2.5 rounded-full transition-colors flex items-center gap-2"
-                    >
-                        <Plus className="h-4 w-4" />
+                    <h3 className="text-xl font-bold text-slate-700">Empty Board</h3>
+                    <p className="text-slate-400 font-medium mb-8">Add a note to get started.</p>
+                    <button onClick={handleAddNote} className="text-amber-500 font-bold hover:bg-amber-50 px-6 py-2.5 rounded-full transition-colors">
                         Create first note
                     </button>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-[200px]">
-                    {notes.map(note => (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-[220px]">
+                    {notes.map((note, i) => (
                         <div
                             key={note.id}
-                            className="glass-card p-4 rounded-[1.5rem] flex flex-col relative group transition-all duration-300 hover:shadow-xl hover:-translate-y-1 bg-gradient-to-br from-white/90 to-white/50 backdrop-blur-xl border border-white/60"
+                            className={cn(
+                                "p-5 rounded-[1.25rem] flex flex-col relative group transition-all duration-200 hover:shadow-lg hover:-translate-y-1 border",
+                                // Cyclic Coloring for clean variation
+                                i % 3 === 0 ? "bg-amber-50 border-amber-100" :
+                                    i % 3 === 1 ? "bg-blue-50 border-blue-100" :
+                                        "bg-rose-50 border-rose-100"
+                            )}
                         >
-                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-yellow-300 to-yellow-100 opacity-50 group-hover:opacity-100 transition-opacity" />
-
                             <textarea
                                 value={note.content}
                                 onChange={(e) => handleUpdateNote(note.id, e.target.value)}
-                                placeholder="Type your note here..."
-                                className="flex-1 bg-transparent border-none resize-none focus:ring-0 text-slate-700 placeholder:text-slate-300 p-0 text-lg font-medium leading-relaxed selection:bg-yellow-100 selection:text-yellow-700"
+                                placeholder="Type here..."
+                                className="flex-1 bg-transparent border-none resize-none focus:ring-0 text-slate-800 placeholder:text-slate-300 p-0 text-lg font-medium leading-relaxed"
                                 spellCheck={false}
                             />
-                            <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-50">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-2 py-1 rounded-lg">
+                            <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-900/5">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                                     {note.updatedAt.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                                 </span>
                                 <button
                                     onClick={() => handleDeleteNote(note.id)}
-                                    className="p-2 hover:bg-red-50 text-slate-300 hover:text-red-500 rounded-xl transition-all opacity-0 group-hover:opacity-100"
-                                    title="Delete Note"
+                                    className="p-1.5 hover:bg-white/50 text-slate-400 hover:text-red-500 rounded-lg transition-all opacity-0 group-hover:opacity-100"
                                 >
                                     <Trash2 className="h-4 w-4" />
                                 </button>

@@ -3,11 +3,17 @@ import { useToast } from './ToastContext';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
 
+export type PetState = 'happy' | 'sick' | 'sleeping' | 'focusing' | 'cool';
+
 interface GamificationContextType {
     xp: number;
     level: number;
     streak: number;
+    health: number;
+    petState: PetState;
     addXP: (amount: number, reason: string) => void;
+    syncHealth: (attendancePercentage: number) => void;
+    setFocusMode: (isFocusing: boolean) => void;
 }
 
 const GamificationContext = createContext<GamificationContextType | undefined>(undefined);
@@ -17,6 +23,10 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     const [xp, setXP] = useState(0);
     const [level, setLevel] = useState(1);
     const [streak, setStreak] = useState(0);
+    const [health, setHealth] = useState(100);
+    const [petState, setPetState] = useState<PetState>('happy');
+    const [isFocusing, setIsFocusing] = useState(false);
+
     const { addToast } = useToast();
 
     // Load initial data
@@ -31,10 +41,6 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
                     .single();
 
                 if (data) {
-                    // XP Logic (assuming XP column exists or we use local storage for now if not in DB yet)
-                    // Wait, the plan didn't add XP to DB, but I saw it uses localStorage. 
-                    // I will prioritize Streak logic here which IS in DB now.
-
                     const lastActive = data.last_active_date ? new Date(data.last_active_date) : new Date(0);
                     const today = new Date();
                     const yesterday = new Date();
@@ -75,6 +81,38 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
         initGamification();
     }, [user]);
 
+    // Pet State Logic
+    useEffect(() => {
+        const updatePetState = () => {
+            const now = new Date();
+            const hour = now.getHours();
+
+            if (isFocusing) {
+                setPetState('focusing');
+                return;
+            }
+
+            // Sleeping hours: 11 PM to 6 AM (23 to 6)
+            if (hour >= 23 || hour < 6) {
+                setPetState('sleeping');
+                return;
+            }
+
+            // Health based state
+            if (health < 75) {
+                setPetState('sick');
+                return;
+            }
+
+            // Default
+            setPetState('happy');
+        };
+
+        updatePetState();
+        const interval = setInterval(updatePetState, 60000); // Check every minute
+        return () => clearInterval(interval);
+    }, [health, isFocusing]);
+
     const updateStreak = async (newStreak: number) => {
         if (!user) return;
         const todayStr = new Date().toISOString().split('T')[0];
@@ -110,8 +148,16 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
         });
     };
 
+    const syncHealth = (attendancePercentage: number) => {
+        setHealth(attendancePercentage);
+    };
+
+    const setFocusMode = (focusing: boolean) => {
+        setIsFocusing(focusing);
+    };
+
     return (
-        <GamificationContext.Provider value={{ xp, level, streak, addXP }}>
+        <GamificationContext.Provider value={{ xp, level, streak, health, petState, addXP, syncHealth, setFocusMode }}>
             {children}
         </GamificationContext.Provider>
     );
