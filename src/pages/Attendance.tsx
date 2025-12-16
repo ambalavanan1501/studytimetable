@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Calendar as CalendarIcon, Check, X, Clock, ChevronLeft, ChevronRight, BarChart3, ListChecks, AlertTriangle } from 'lucide-react';
+import { Calendar as CalendarIcon, Check, X, Clock, ChevronLeft, ChevronRight, BarChart3, ListChecks } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { getDayOrder, setDayOrder as saveDayOrder } from '../lib/dayOrder';
 

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Plus, Calendar as CalendarIcon, Clock, MapPin, Loader2 } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, MapPin, Loader2 } from 'lucide-react';
 import { SmartAddModal } from '../components/timetable/SmartAddModal';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';

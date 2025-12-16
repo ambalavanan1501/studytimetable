@@ -6,7 +6,7 @@ import { SEO } from '../components/SEO';
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, TouchSensor, closestCorners, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Plus, Trash2, GripVertical, CheckCircle2, Clock, Circle } from 'lucide-react';
+import { Plus, Trash2, CheckCircle2, Clock, Circle } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 interface Task {
