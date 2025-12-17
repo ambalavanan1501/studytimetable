@@ -1,6 +1,6 @@
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
 
-const DB_VERSION = 4; // Increment version for Kanban migration
+const DB_VERSION = 5; // Increment version for Subject Details & Task Dates
 
 interface MyDB extends DBSchema {
     notes: {
@@ -27,8 +27,19 @@ interface MyDB extends DBSchema {
         value: {
             id: string;
             text: string;
-            status: 'todo' | 'in-progress' | 'done'; // Changed from completed: boolean
+            status: 'todo' | 'in-progress' | 'done';
+            dueDate?: Date; // Added Due Date
             createdAt: Date;
+        };
+    };
+    subject_details: { // NEW STORE
+        key: string; // subjectCode
+        value: {
+            subjectCode: string;
+            professorName?: string;
+            professorEmail?: string;
+            // storing resources as a simple array within the subject object for simplicity
+            resources: { id: string; title: string; url: string; type: 'drive' | 'link' | 'other' }[];
         };
     };
     simulator_subjects: {
@@ -49,7 +60,7 @@ let dbPromise: Promise<IDBPDatabase<MyDB>>;
 export const initDB = () => {
     if (!dbPromise) {
         dbPromise = openDB<MyDB>(DB_NAME, DB_VERSION, {
-            upgrade(db, oldVersion, _, transaction) {
+            upgrade(db, _oldVersion, _, transaction) {
                 // Sticky Notes Store
                 if (!db.objectStoreNames.contains('notes')) {
                     const notesStore = db.createObjectStore('notes', { keyPath: 'id' });
@@ -71,14 +82,11 @@ export const initDB = () => {
                 // Tasks Store
                 if (!db.objectStoreNames.contains('tasks')) {
                     db.createObjectStore('tasks', { keyPath: 'id' });
-                } else if (oldVersion < 4) {
-                    // MIGRATION: boolean completed -> status string
-                    // We can't easily iterate and update in 'upgrade' without careful cursor usage,
-                    // but for a simple client-side app, we might handle data migration lazily or clear it.
-                    // Ideally: Iterate all and update.
-                    // For safety/simplicity in this context, we'll let the UI handle legacy data mapping 
-                    // or just accept that 'completed' might be present in old objects until overwritten.
-                    // Ideally we should run a cursor here.
+                }
+
+                // Subject Details Store (NEW)
+                if (!db.objectStoreNames.contains('subject_details')) {
+                    db.createObjectStore('subject_details', { keyPath: 'subjectCode' });
                 }
 
                 // Simulator Subjects Store
@@ -124,11 +132,19 @@ export const db = {
     async getAllTasks() {
         return (await initDB()).getAll('tasks');
     },
-    async saveTask(task: { id: string; text: string; status: 'todo' | 'in-progress' | 'done'; createdAt: Date }) {
+    async saveTask(task: { id: string; text: string; status: 'todo' | 'in-progress' | 'done'; dueDate?: Date; createdAt: Date }) {
         return (await initDB()).put('tasks', task);
     },
     async deleteTask(id: string) {
         return (await initDB()).delete('tasks', id);
+    },
+
+    // Subject Details (NEW)
+    async getSubjectDetails(subjectCode: string) {
+        return (await initDB()).get('subject_details', subjectCode);
+    },
+    async saveSubjectDetails(details: { subjectCode: string; professorName?: string; professorEmail?: string; resources: any[] }) {
+        return (await initDB()).put('subject_details', details);
     },
 
     // Simulator Subjects

@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Calendar, User, CalendarCheck, LogOut, Calculator, Menu, FileText, X } from 'lucide-react';
+import { Home, Calendar, User, CalendarCheck, LogOut, Calculator, Menu, FileText, X, ClipboardList, UserCheck } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '../lib/utils';
 import { useMediaQuery } from '../hooks/useMediaQuery';
@@ -21,10 +21,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Link
             to={to}
             className={cn(
-                "group flex items-center gap-3 p-3 rounded-xl transition-all duration-200",
+                "group flex items-center gap-3 p-3 rounded-xl transition-all duration-200 border border-transparent mb-1",
                 isActive(to)
-                    ? "bg-slate-900 text-white shadow-md"
-                    : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                    ? "bg-blue-600 text-white shadow-md shadow-blue-900/20"
+                    : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
             )}
         >
             <Icon className={cn(
@@ -44,37 +44,28 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="min-h-screen pb-24 relative font-sans selection:bg-indigo-100 selection:text-indigo-900 overflow-x-hidden bg-slate-50/50">
             {/* Desktop Sidebar */}
             {isDesktop && (
-                <aside className="fixed left-0 top-0 h-full w-64 bg-white/80 backdrop-blur-xl border-r border-slate-200/60 z-50 p-6 flex flex-col justify-between">
-                    <div className="flex items-center gap-3 px-2 mb-8">
-                        <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-slate-900/20">
-                            <span className="text-lg">A</span>
+                <aside className="fixed left-0 top-0 h-full w-64 bg-[#0F172A] border-r border-slate-800 z-50 p-6 flex flex-col justify-between text-slate-300">
+                    <div className="flex items-center gap-3 px-2 mb-12">
+                        <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/20">
+                            <FileText className="h-6 w-6" />
                         </div>
                         <div>
-                            <span className="block text-xl font-bold text-slate-900 tracking-tight">TT Tracker</span>
-                            <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-bold">Niki OS</span>
+                            <span className="block text-xl font-bold text-white tracking-tight">IT Tracker</span>
                         </div>
                     </div>
 
-                    <nav className="space-y-6 flex-1 overflow-y-auto no-scrollbar py-2">
-                        <div className="space-y-1">
-                            <p className="px-3 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Menu</p>
-                            <NavItem to="/" icon={Home} label="Dashboard" />
-                            <NavItem to="/schedule" icon={Calendar} label="Schedule" />
-                            <NavItem to="/tasks" icon={CalendarCheck} label="Assignments" />
-                            <NavItem to="/notes" icon={FileText} label="Notes" />
-                        </div>
-
-                        <div className="space-y-1">
-                            <p className="px-3 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Tools</p>
-                            <NavItem to="/simulator" icon={Calculator} label="Simulator" />
-                            <NavItem to="/attendance" icon={CalendarCheck} label="Attendance" />
-                            <NavItem to="/profile" icon={User} label="Profile" />
-                        </div>
+                    <nav className="space-y-1 flex-1 overflow-y-auto no-scrollbar py-2">
+                        <NavItem to="/" icon={Home} label="Dashboard" />
+                        <NavItem to="/schedule" icon={Calendar} label="Schedule" />
+                        <NavItem to="/tasks" icon={ClipboardList} label="Assignments" />
+                        <NavItem to="/notes" icon={FileText} label="Notes" />
+                        <NavItem to="/attendance" icon={UserCheck} label="Attendance" />
+                        <NavItem to="/profile" icon={User} label="Profile" />
                     </nav>
 
                     <button
                         onClick={() => signOut()}
-                        className="flex items-center gap-3 p-3 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all mt-6 group font-bold text-sm"
+                        className="flex items-center gap-3 p-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all mt-6 group font-bold text-sm"
                     >
                         <LogOut className="h-5 w-5" />
                         <span>Sign Out</span>

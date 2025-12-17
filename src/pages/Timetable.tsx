@@ -3,7 +3,7 @@ import { Plus, Calendar as CalendarIcon, MapPin, Loader2 } from 'lucide-react';
 import { SmartAddModal } from '../components/timetable/SmartAddModal';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
-import { cn } from '../lib/utils';
+import { cn, formatTime } from '../lib/utils';
 import { SEO } from '../components/SEO';
 import { CalendarExportBtn } from '../components/timetable/CalendarExportBtn';
 
@@ -61,13 +61,7 @@ export function Timetable() {
         fetchTimetable();
     }, [fetchTimetable]); // fetchTimetable is now a stable dependency due to useCallback
 
-    const formatTime = (time: string) => {
-        const [hours, minutes] = time.split(':');
-        const hour = parseInt(hours);
-        const ampm = hour >= 12 ? 'PM' : 'AM';
-        const hour12 = hour % 12 || 12;
-        return `${hour12}:${minutes} ${ampm}`;
-    };
+
 
     return (
         <div className="pb-32 space-y-10 animate-fade-in-up">

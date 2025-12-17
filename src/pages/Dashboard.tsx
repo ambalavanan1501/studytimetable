@@ -2,38 +2,17 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Clock, BookOpen, User, ArrowRight, MapPin } from 'lucide-react';
+import { Clock, BookOpen, MapPin, MoreHorizontal } from 'lucide-react';
 import { useGamification } from '../context/GamificationContext';
-import { CountdownWidget } from '../components/dashboard/CountdownWidget';
-import { PetWidget } from '../components/gamification/PetWidget';
-import { cn } from '../lib/utils';
-import { useSettings } from '../context/SettingsContext';
+import { cn, formatTime } from '../lib/utils';
 import { SEO } from '../components/SEO';
-import {
-    DndContext,
-    closestCenter,
-    KeyboardSensor,
-    PointerSensor,
-    useSensor,
-    useSensors,
-    DragEndEvent
-} from '@dnd-kit/core';
-import {
-    arrayMove,
-    SortableContext,
-    sortableKeyboardCoordinates,
-    rectSortingStrategy
-} from '@dnd-kit/sortable';
-import { SortableWidget } from '../components/dashboard/SortableWidget';
 import { SubjectVault } from '../components/vault/SubjectVault';
-
-
 
 export function Dashboard() {
     const { user } = useAuth();
     const { syncHealth } = useGamification();
-    const [nextClass, setNextClass] = useState<any>(null);
     const [ongoingClass, setOngoingClass] = useState<any>(null);
+    const [nextClass, setNextClass] = useState<any>(null);
     const [userName, setUserName] = useState('Student');
     const [attendancePercentage, setAttendancePercentage] = useState(0);
 
@@ -42,7 +21,6 @@ export function Dashboard() {
     const [cgpa, setCgpa] = useState(0);
     const [credits, setCredits] = useState(0);
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-    const { privacyMode } = useSettings();
 
     // Vault State
     const [isVaultOpen, setIsVaultOpen] = useState(false);
@@ -53,12 +31,24 @@ export function Dashboard() {
         setIsVaultOpen(true);
     };
 
-    useEffect(() => {
-        // Live Clock
-        const timer = setInterval(() => {
-            setCurrentTime(new Date());
-        }, 1000);
+    const colors = [
+        'bg-rose-100 border-rose-200 text-rose-900',
+        'bg-indigo-100 border-indigo-200 text-indigo-900',
+        'bg-amber-100 border-amber-200 text-amber-900',
+        'bg-emerald-100 border-emerald-200 text-emerald-900',
+        'bg-cyan-100 border-cyan-200 text-cyan-900',
+    ];
 
+    const dotColors = [
+        'bg-rose-500',
+        'bg-indigo-500',
+        'bg-amber-500',
+        'bg-emerald-500',
+        'bg-cyan-500',
+    ];
+
+    useEffect(() => {
+        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
 
@@ -69,11 +59,8 @@ export function Dashboard() {
             const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
             // For demo, if weekend, default to Monday
             const { getDayOrder } = await import('../lib/dayOrder');
-
             const todayStr = new Date().toISOString().split('T')[0];
             const order = getDayOrder(todayStr);
-
-            // For demo, if weekend, default to Monday, UNLESS there is a specific order
             const queryDay = order ? order : (['Saturday', 'Sunday'].includes(today) ? 'Monday' : today);
 
             try {
@@ -96,7 +83,6 @@ export function Dashboard() {
                 all.sort((a, b) => a.start_time.localeCompare(b.start_time));
                 setTodayClasses(all);
 
-                // Find next and ongoing class based on current time
                 const now = new Date();
                 const timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
 
@@ -104,14 +90,13 @@ export function Dashboard() {
                 const upcoming = all.find(c => c.start_time > timeStr);
 
                 setOngoingClass(current || null);
-                setNextClass(upcoming || all[0]); // Default to first class if day is over or just started
+                setNextClass(upcoming || all[0]);
 
                 if (logsRes.data && logsRes.data.length > 0) {
                     const present = logsRes.data.filter(l => l.status === 'present').length;
                     const total = logsRes.data.length;
-                    const percentage = Math.round((present / total) * 100);
-                    setAttendancePercentage(percentage);
-                    syncHealth(percentage);
+                    setAttendancePercentage(Math.round((present / total) * 100));
+                    syncHealth(Math.round((present / total) * 100));
                 }
             } catch (error) {
                 console.error('Error fetching dashboard data:', error);
@@ -119,256 +104,177 @@ export function Dashboard() {
         };
 
         fetchDashboardData();
-        // Refresh data every minute to update ongoing status
         const dataTimer = setInterval(fetchDashboardData, 60000);
         return () => clearInterval(dataTimer);
     }, [user]);
 
-    // DnD State
-    const [items, setItems] = useState<string[]>(() => {
-        const saved = localStorage.getItem('dashboard-layout');
-        const defaultItems = ['countdown'];
-        if (saved) {
-            const parsed = JSON.parse(saved);
-            // Filter out 'tasks' if legacy data exists
-            return parsed.filter((i: string) => i !== 'tasks');
-        }
-        return defaultItems;
-    });
-
-    const sensors = useSensors(
-        useSensor(PointerSensor),
-        useSensor(KeyboardSensor, {
-            coordinateGetter: sortableKeyboardCoordinates,
-        })
-    );
-
-    const handleDragEnd = (event: DragEndEvent) => {
-        const { active, over } = event;
-
-        if (over && active.id !== over.id) {
-            setItems((items) => {
-                const oldIndex = items.indexOf(active.id as string);
-                const newIndex = items.indexOf(over.id as string);
-                const newItems = arrayMove(items, oldIndex, newIndex);
-                localStorage.setItem('dashboard-layout', JSON.stringify(newItems)); // Persist
-                return newItems;
-            });
-        }
-    };
-
     return (
-        <div className="p-4 md:p-8 space-y-6 pb-32 animate-fade-in-up max-w-[1600px] mx-auto min-h-screen">
-            <SEO
-                title="Dashboard"
-                description="Your student command center."
-            />
+        <div className="p-6 md:p-10 pb-32 animate-fade-in-up max-w-7xl mx-auto min-h-screen bg-stone-50/50">
+            <SEO title="Dashboard" description="Your focus space." />
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-
-                {/* === LEFT COLUMN (Main Focus) === */}
-                <div className="lg:col-span-2 space-y-6">
-
-                    {/* 1. HEADER (Reference Style: Avatar Left, Text Right) */}
-                    <div className="flex items-center gap-4 px-2">
-                        <Link to="/profile" className="group/avatar relative shrink-0">
-                            {avatarUrl ? (
-                                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white shadow-xl transition-transform group-hover/avatar:scale-105 ring-2 ring-slate-100">
-                                    <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
-                                </div>
-                            ) : (
-                                <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 border-2 border-white shadow-xl ring-2 ring-slate-100">
-                                    <User className="h-8 w-8" />
-                                </div>
-                            )}
-                            {/* Online Badge */}
-                            <div className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white animate-pulse" />
-                        </Link>
-                        <div>
-                            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 leading-tight">
-                                Hello, <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600">{userName}</span>
-                            </h1>
-                            <p className="text-sm font-medium text-slate-500 tracking-wide">
-                                Your focus space is ready.
-                            </p>
+            {/* Mobile Header */}
+            <div className="flex justify-between items-start mb-8">
+                <div>
+                    <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-6">Dashboard</h1>
+                    <h2 className="text-2xl font-bold text-slate-900 leading-tight">
+                        Hello, {userName}.
+                    </h2>
+                    <p className="text-slate-500 font-medium">
+                        Your focus space is ready.
+                    </p>
+                </div>
+                <div className="flex flex-col-reverse md:flex-row items-end md:items-center gap-4 md:gap-6">
+                    <div className="flex items-center gap-4">
+                        <div className="text-right">
+                            <div className="text-lg md:text-2xl font-bold text-slate-900 leading-none">{currentTime.getDate()}</div>
+                            <div className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-slate-500">{currentTime.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()}</div>
                         </div>
-                    </div>
-
-                    {/* 2. DATE & TIME BAR */}
-                    <div className="w-full card-base px-8 py-6 flex justify-between items-center bg-white/80 backdrop-blur-sm">
-                        <div className="flex items-center gap-3">
-                            <div className="text-xs font-bold text-slate-500 uppercase tracking-widest">
-                                {currentTime.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' }).toUpperCase()}
+                        <div className="h-8 md:h-10 w-px bg-slate-300"></div>
+                        <div className="text-right">
+                            <div className="text-base md:text-xl font-bold text-slate-900 leading-none">
+                                {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
                             </div>
-                        </div>
-                        <div className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight font-variant-numeric tabular-nums">
-                            {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                            <div className="text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-slate-500">Live Time</div>
                         </div>
                     </div>
 
-                    {/* 3. LIVE FOCUS CARD - Full Width on Desktop */}
-                    <div className="card-base p-8 md:p-12 relative overflow-hidden group hover-lift bg-gradient-to-br from-white via-indigo-50/20 to-purple-50/20 border-slate-100">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-indigo-500/10 transition-colors duration-700"></div>
+                    <Link to="/profile" className="w-12 h-12 rounded-full overflow-hidden border-2 border-white shadow-sm shrink-0">
+                        {avatarUrl ? (
+                            <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+                        ) : (
+                            <div className="w-full h-full bg-slate-200 flex items-center justify-center text-slate-400 font-bold">?</div>
+                        )}
+                    </Link>
+                </div>
+            </div>
 
-                        {/* Header: Status */}
-                        <div className="relative z-10 flex justify-between items-start mb-10">
-                            {ongoingClass ? (
-                                <span className="px-4 py-2 rounded-full bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-slate-900/20">
-                                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" /> Live
-                                </span>
-                            ) : (
-                                <span className="px-4 py-2 rounded-full bg-white text-slate-500 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 shadow-sm border border-slate-100">
-                                    <div className="w-2 h-2 rounded-full bg-slate-400" /> Up Next
-                                </span>
-                            )}
+            {/* HERO CARD */}
+            <div className="bg-white rounded-[2rem] p-6 md:p-8 shadow-sm border border-slate-100 relative overflow-hidden mb-8">
+                {/* Decoration */}
+                <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-gradient-to-br from-indigo-50 to-purple-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 opacity-80 decoration-slice"></div>
 
-                            {(ongoingClass || nextClass) && (
+                <div className="relative z-10 flex flex-col gap-6">
+                    <div>
+                        <span className="inline-block px-3 py-1.5 rounded-lg bg-stone-100 text-stone-600 text-[10px] font-bold uppercase tracking-wider mb-4">
+                            {ongoingClass ? "LIVE CLASS" : "NEXT CLASS"}
+                        </span>
+
+                        {ongoingClass || nextClass ? (
+                            <>
+                                <h3 className="text-2xl md:text-3xl font-bold text-slate-900 leading-tight mb-4">
+                                    {(ongoingClass || nextClass).subject_name}
+                                </h3>
+
+                                <div className="space-y-2 mb-6">
+                                    <div className="flex items-center gap-2 text-slate-500 font-medium text-sm">
+                                        <BookOpen className="h-4 w-4" />
+                                        {(ongoingClass || nextClass).subject_code}
+                                    </div>
+                                    <div className="flex items-center gap-2 text-slate-500 font-medium text-sm">
+                                        <Clock className="h-4 w-4" />
+                                        {formatTime((ongoingClass || nextClass).start_time)} - {formatTime((ongoingClass || nextClass).end_time)}
+                                    </div>
+                                    <div className="flex items-center gap-2 text-slate-500 font-medium text-sm">
+                                        <MapPin className="h-4 w-4" />
+                                        {(ongoingClass || nextClass).room_number || "SJT802"}
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <h3 className="text-xl font-bold text-slate-300 py-8">No classes scheduled.</h3>
+                        )}
+                    </div>
+
+                    <div className="flex flex-wrap gap-3">
+
+                        {(ongoingClass || nextClass) && (
+                            <>
                                 <button
                                     onClick={() => openVault((ongoingClass || nextClass).subject_name, (ongoingClass || nextClass).subject_code)}
-                                    className="p-3 rounded-full bg-white shadow-sm border border-slate-100 hover:scale-110 hover:shadow-md transition-all active:scale-95"
+                                    className="px-4 py-3 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition-colors text-sm"
                                 >
-                                    <BookOpen className="h-5 w-5 text-slate-900" />
+                                    Open Notes
                                 </button>
-                            )}
-                        </div>
 
-                        {/* Content: Subject Info */}
-                        <div className="relative z-10">
-                            {ongoingClass || nextClass ? (
-                                <div className="mb-10">
-                                    <h2 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter leading-tight mb-3">
-                                        {(ongoingClass || nextClass).subject_name}
-                                    </h2>
-                                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest px-1">
-                                        {(ongoingClass || nextClass).subject_code}
-                                    </p>
-                                </div>
-                            ) : (
-                                <div className="mb-10 py-6">
-                                    <h2 className="text-4xl md:text-5xl font-black text-slate-300 tracking-tighter leading-tight">No classes scheduled.</h2>
-                                    <p className="text-sm font-bold text-slate-400 mt-2">Time to relax.</p>
-                                </div>
-                            )}
-
-                            {/* Footer: Metadata Pills - Monochrome */}
-                            {(ongoingClass || nextClass) && (
-                                <div className="flex flex-wrap gap-3">
-                                    <div className="px-5 py-3 rounded-2xl bg-white border border-slate-100 flex items-center gap-3 shadow-sm">
-                                        <Clock className="h-4 w-4 text-slate-400" />
-                                        <span className="text-base font-bold text-slate-700 tabular-nums">
-                                            {ongoingClass
-                                                ? `${ongoingClass.start_time.slice(0, 5)} - ${ongoingClass.end_time.slice(0, 5)}`
-                                                : `${nextClass.start_time.slice(0, 5)} - ${nextClass.end_time.slice(0, 5)}`
-                                            }
-                                        </span>
-                                    </div>
-                                    {(ongoingClass || nextClass).room_number && (
-                                        <div className="px-5 py-3 rounded-2xl bg-white border border-slate-100 flex items-center gap-3 shadow-sm">
-                                            <MapPin className="h-4 w-4 text-slate-400" />
-                                            <span className="text-base font-bold text-slate-700">
-                                                {(ongoingClass || nextClass).room_number}
-                                            </span>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
+                            </>
+                        )}
                     </div>
                 </div>
-
-                {/* === RIGHT COLUMN (Stats & Widgets) === */}
-                <div className="lg:col-span-1 space-y-6">
-
-                    {/* Pet Widget (Study Buddy) */}
-                    <div className="hover-lift">
-                        <PetWidget />
-                    </div>
-
-                    {/* 5. STATS STACK - Clean Monochrome */}
-                    <div className="card-base p-8 text-center relative overflow-hidden group hover-lift flex flex-col items-center justify-center bg-white">
-                        <div className="mb-4 p-4 bg-slate-50 rounded-2xl group-hover:scale-110 transition-transform duration-300 shadow-sm">
-                            <Clock className="h-8 w-8 text-slate-900" />
-                        </div>
-                        <div className={cn("text-6xl font-black text-slate-900 tracking-tighter mb-2 tabular-nums", privacyMode && "blur-md select-none")}>
-                            {attendancePercentage}%
-                        </div>
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Attendance</div>
-                    </div>
-
-                    {/* Academics Split Row - Clean Monochrome */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="card-base p-6 flex flex-col items-center justify-center text-center hover-lift bg-white">
-                            <div className={cn("text-3xl font-black text-slate-900 tracking-tighter mb-1", privacyMode && "blur-md select-none")}>
-                                {cgpa > 0 ? cgpa : '-'}
-                            </div>
-                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">CGPA</div>
-                        </div>
-                        <div className="card-base p-6 flex flex-col items-center justify-center text-center hover-lift bg-white">
-                            <div className={cn("text-3xl font-black text-slate-900 tracking-tighter mb-1", privacyMode && "blur-md select-none")}>
-                                {credits > 0 ? credits : '-'}
-                            </div>
-                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Credits</div>
-                        </div>
-                    </div>
-
-                    {/* 6. COMPACT WIDGETS (Countdown only) */}
-                    <DndContext
-                        sensors={sensors}
-                        collisionDetection={closestCenter}
-                        onDragEnd={handleDragEnd}
-                    >
-                        <SortableContext items={items} strategy={rectSortingStrategy}>
-                            <div className="space-y-4">
-                                {items.map(id => {
-                                    if (id === 'countdown') {
-                                        return (
-                                            <SortableWidget key={id} id={id}>
-                                                <div className="bg-white/60 p-6 rounded-[2rem] hover:bg-white transition-colors">
-                                                    <div className="flex items-center justify-between mb-4">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="p-2 bg-amber-50 rounded-xl text-amber-600"><Clock className="h-4 w-4" /></div>
-                                                            <span className="font-bold text-slate-700">Timer</span>
-                                                        </div>
-                                                    </div>
-                                                    <CountdownWidget />
-                                                </div>
-                                            </SortableWidget>
-                                        );
-                                    }
-                                    return null;
-                                })}
-                            </div>
-                        </SortableContext>
-                    </DndContext>
-
-                    {/* Schedule List (Compact) */}
-                    <div className="bg-white/40 p-6 rounded-[2rem] flex flex-col max-h-[300px]">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-bold text-slate-700">Today's Schedule</h3>
-                            <Link to="/timetable" className="p-2 hover:bg-white rounded-full transition-colors"><ArrowRight className="h-4 w-4 text-slate-400" /></Link>
-                        </div>
-                        <div className="flex-1 overflow-y-auto no-scrollbar space-y-2">
-                            {todayClasses.length > 0 ? (
-                                todayClasses.map((c, i) => {
-                                    const now = new Date();
-                                    const timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
-                                    const isCurrent = c.start_time <= timeStr && c.end_time > timeStr;
-                                    return (
-                                        <div key={i} className={cn("p-3 rounded-xl flex items-center justify-between text-sm", isCurrent ? "bg-white shadow-sm" : "text-slate-500")}>
-                                            <span className="font-bold truncate max-w-[120px]">{c.subject_name}</span>
-                                            <span className="font-mono text-xs opacity-70">{c.start_time.slice(0, 5)}</span>
-                                        </div>
-                                    )
-                                })
-                            ) : (
-                                <p className="text-center text-xs text-slate-400 py-4">No classes.</p>
-                            )}
-                        </div>
-                    </div>
-
-                </div>
-
             </div>
+
+            {/* MAIN CONTENT GRID */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+
+                {/* LEFT COL: Stats Widgets */}
+                <div className="space-y-6">
+                    {/* CGPA & Credits */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-[#F5F5F4] rounded-[1.5rem] p-6 flex flex-col items-center justify-center text-center h-32">
+                            <div className="text-[10px] uppercase font-bold text-slate-500 mb-1 tracking-wider">CGPA</div>
+                            <div className="text-3xl font-bold text-slate-900">{cgpa || '-'}</div>
+                        </div>
+                        <div className="bg-[#F5F5F4] rounded-[1.5rem] p-6 flex flex-col items-center justify-center text-center h-32">
+                            <div className="text-[10px] uppercase font-bold text-slate-500 mb-1 tracking-wider">CREDITS</div>
+                            <div className="text-3xl font-bold text-slate-900">{credits || '-'}</div>
+                        </div>
+                    </div>
+
+                    {/* Attendance */}
+                    <div className="bg-[#EFEEEE] rounded-[1.5rem] p-6 flex items-center justify-between min-h-[120px]">
+                        <div>
+                            <div className="text-4xl font-bold text-slate-900 leading-none mb-1">{attendancePercentage}%</div>
+                            <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">ATTENDANCE</div>
+                        </div>
+                        <div className="relative w-16 h-16">
+                            <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                                <path className="text-slate-300" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" />
+                                <path className="text-[#EA580C]" strokeDasharray={`${attendancePercentage}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+                            </svg>
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <Clock className="w-4 h-4 text-slate-400" />
+                            </div>
+                        </div>
+                    </div>
+
+
+                </div>
+
+                {/* RIGHT COL: Today's Schedule */}
+                <div className="space-y-6">
+                    <div className="flex justify-between items-center px-2">
+                        <div className="font-bold text-slate-900 text-lg">Today's Schedule</div>
+                        <MoreHorizontal className="w-5 h-5 text-slate-400" />
+                    </div>
+
+                    <div className="relative pl-3 space-y-4">
+                        {/* Timeline Line */}
+                        <div className="absolute left-[11px] top-4 bottom-4 w-0.5 bg-slate-300"></div>
+
+                        {todayClasses.map((c, i) => {
+                            const colorIndex = i % colors.length;
+                            return (
+                                <div key={i} className="relative pl-8">
+                                    {/* Dot */}
+                                    <div className={cn("absolute left-0 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full border-4 border-[#FDFBF7] z-10", dotColors[colorIndex])}></div>
+
+                                    <div className={cn("rounded-xl p-4 flex justify-between items-center shadow-sm", colors[colorIndex])}>
+                                        <div>
+                                            <div className="font-bold text-sm leading-tight mb-0.5">{c.subject_name}</div>
+                                            {/* <div className="text-xs opacity-70">{c.subject_code}</div> */}
+                                        </div>
+                                        <div className="text-sm font-bold opacity-80 pl-4">{formatTime(c.start_time)}</div>
+                                    </div>
+                                </div>
+                            )
+                        })}
+                        {todayClasses.length === 0 && (
+                            <div className="text-center text-slate-400 italic py-8">No classes today</div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+
 
             {/* Vault Modal */}
             {SubjectVault && vaultSubject && (

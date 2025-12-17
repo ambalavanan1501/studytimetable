@@ -6,13 +6,14 @@ import { SEO } from '../components/SEO';
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, TouchSensor, closestCorners, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Plus, Trash2, CheckCircle2, Clock, Circle } from 'lucide-react';
+import { Plus, Trash2, CheckCircle2, Clock, Circle, Calendar } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 interface Task {
     id: string;
     text: string;
     status: 'todo' | 'in-progress' | 'done';
+    dueDate?: Date;
     createdAt: Date;
 }
 
@@ -31,6 +32,7 @@ export function Tasks() {
     const [tasks, setTasks] = useState<Task[]>([]);
     const [activeId, setActiveId] = useState<string | null>(null);
     const [newTask, setNewTask] = useState('');
+    const [newDueDate, setNewDueDate] = useState('');
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -46,7 +48,9 @@ export function Tasks() {
             const data = await db.getAllTasks();
             const parsed = data.map((t: any) => ({
                 ...t,
-                status: t.status ? t.status : (t.completed ? 'done' : 'todo')
+                status: t.status ? t.status : (t.completed ? 'done' : 'todo'),
+                createdAt: new Date(t.createdAt),
+                dueDate: t.dueDate ? new Date(t.dueDate) : undefined
             }));
             setTasks(parsed.sort((a: Task, b: Task) => b.createdAt.getTime() - a.createdAt.getTime()));
         } catch (error) {
@@ -62,12 +66,14 @@ export function Tasks() {
             id: crypto.randomUUID(),
             text: newTask.trim(),
             status: 'todo',
+            dueDate: newDueDate ? new Date(newDueDate) : undefined,
             createdAt: new Date()
         };
 
         await db.saveTask(task);
         setTasks([task, ...tasks]);
         setNewTask('');
+        setNewDueDate('');
         addXP(10, 'Task Created');
     };
 
@@ -136,7 +142,7 @@ export function Tasks() {
                     <p className="text-slate-500 font-medium text-sm">Organize your academic workload.</p>
                 </div>
 
-                <form onSubmit={handleAddTask} className="flex gap-2 w-full md:w-auto">
+                <form onSubmit={handleAddTask} className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
                     <input
                         type="text"
                         value={newTask}
@@ -144,10 +150,16 @@ export function Tasks() {
                         placeholder="Add new assignment..."
                         className="bg-white px-5 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-900 w-full md:w-80 shadow-sm"
                     />
+                    <input
+                        type="date"
+                        value={newDueDate}
+                        onChange={e => setNewDueDate(e.target.value)}
+                        className="bg-white px-5 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-900 md:w-40 shadow-sm text-sm"
+                    />
                     <button
                         type="submit"
                         disabled={!newTask.trim()}
-                        className="bg-slate-900 text-white p-3 rounded-xl hover:bg-slate-800 transition-all disabled:opacity-50 shadow-md"
+                        className="bg-slate-900 text-white p-3 rounded-xl hover:bg-slate-800 transition-all disabled:opacity-50 shadow-md flex items-center justify-center h-[50px] w-[50px]"
                     >
                         <Plus className="h-5 w-5" />
                     </button>
@@ -238,7 +250,9 @@ function TaskCard({ task, onDelete, isDragging, isOverlay }: { task: Task, onDel
         >
             <div className={cn(
                 "w-1.5 h-1.5 rounded-full mt-2 shrink-0",
-                task.status === 'done' ? "bg-emerald-400" : task.status === 'in-progress' ? "bg-blue-400" : "bg-slate-300"
+                task.status === 'done' && "bg-emerald-400",
+                task.status === 'in-progress' && "bg-blue-400",
+                task.status === 'todo' && "bg-slate-300"
             )} />
 
             <div className="flex-1 min-w-0">
@@ -248,10 +262,21 @@ function TaskCard({ task, onDelete, isDragging, isOverlay }: { task: Task, onDel
                 )}>
                     {task.text}
                 </p>
-                <div className="flex items-center gap-2 mt-2">
+
+                <div className="flex flex-wrap items-center gap-3 mt-2">
                     <span className="text-[10px] font-bold text-slate-400">
                         {new Date(task.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                     </span>
+
+                    {task.dueDate && (
+                        <div className={cn(
+                            "flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-md",
+                            task.status !== 'done' && new Date(task.dueDate) < new Date() ? "text-red-500 bg-red-50" : "text-blue-500 bg-blue-50"
+                        )}>
+                            <Calendar className="h-3 w-3" />
+                            {new Date(task.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                        </div>
+                    )}
                 </div>
             </div>
 
