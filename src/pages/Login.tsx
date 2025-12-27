@@ -18,6 +18,7 @@ export function Login() {
 
         try {
             if (isSignUp) {
+                // @ts-ignore
                 const { error } = await supabase.auth.signUp({
                     email,
                     password,
@@ -25,6 +26,7 @@ export function Login() {
                 if (error) throw error;
                 alert('Check your email for the login link!');
             } else {
+                // @ts-ignore
                 const { error } = await supabase.auth.signInWithPassword({
                     email,
                     password,

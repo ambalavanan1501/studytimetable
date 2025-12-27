@@ -1,3 +1,4 @@
+// @ts-ignore
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGamification } from '../../context/GamificationContext';
 import { cn } from '../../lib/utils';

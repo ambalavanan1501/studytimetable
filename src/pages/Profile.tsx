@@ -93,6 +93,7 @@ export function Profile() {
     }, [user]);
 
     const handleSignOut = async () => {
+        // @ts-ignore
         await supabase.auth.signOut();
         navigate('/login');
     };

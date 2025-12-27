@@ -195,6 +195,7 @@ function Column({ column, tasks, onDelete, onUpdateStatus }: { column: any, task
     const { setNodeRef } = useSortable({
         id: column.id,
         data: { type: 'Column', column },
+        resizeObserverConfig: { disabled: true }
     });
 
     return (
@@ -227,6 +228,7 @@ function SortableTask({ task, onDelete, onUpdateStatus }: { task: Task, onDelete
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
         id: task.id,
         data: { type: 'Task', task },
+        resizeObserverConfig: { disabled: true }
     });
 
     const style = { transform: CSS.Transform.toString(transform), transition };

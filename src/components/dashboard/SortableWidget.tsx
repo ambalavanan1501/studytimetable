@@ -13,7 +13,7 @@ export function SortableWidget({ id, children }: SortableWidgetProps) {
         setNodeRef,
         transform,
         transition,
-    } = useSortable({ id });
+    } = useSortable({ id, resizeObserverConfig: { disabled: true } });
 
     const style = {
         transform: CSS.Transform.toString(transform),
