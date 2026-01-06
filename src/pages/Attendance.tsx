@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Calendar as CalendarIcon, Check, X, Clock, ChevronLeft, ChevronRight, BarChart3, ListChecks } from 'lucide-react';
+import { Calendar as CalendarIcon, Check, X, Clock, ChevronLeft, ChevronRight, BarChart3, ListChecks, Ban } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { getDayOrder, setDayOrder as saveDayOrder } from '../lib/dayOrder';
 
 interface AttendanceLog {
     subject_code: string;
-    status: 'present' | 'absent';
+    status: 'present' | 'absent' | 'cancelled';
 }
 
 interface CourseStats {
@@ -28,12 +28,6 @@ export function Attendance() {
     const [stats, setStats] = useState<CourseStats[]>([]);
     const [dayOrder, setDayOrder] = useState<string | null>(null);
     const [attendanceGoal, setAttendanceGoal] = useState(75);
-
-    // Import helper dynamically or use direct import if top-level
-    // Assuming we added the file, we should import it at the top, 
-    // but since I'm editing a block, I'll add the hook logic here first.
-    // Better: I will do a multi-replace to add imports at top and state here.
-
 
     const formatDate = (date: Date) => {
         return date.toISOString().split('T')[0];
@@ -73,8 +67,9 @@ export function Attendance() {
                     .eq('user_id', user.id)
                     .eq('date', dateStr);
 
-                setAttendanceLogs(logs || []);
-                setAttendanceLogs(logs || []);
+                // Cast the logs to AttendanceLog[] carefully or just let it infer, 
+                // but we know status can now be 'cancelled' from DB if we updated it.
+                setAttendanceLogs((logs as any) || []);
 
                 // Fetch attendance goal
                 const { data: profile } = await supabase.from('profiles').select('attendance_goal').eq('id', user.id).single();
@@ -111,6 +106,7 @@ export function Attendance() {
                     const subjectLogs = allLogs?.filter(l => l.subject_code === code) || [];
                     const present = subjectLogs.filter(l => l.status === 'present').length;
                     const absent = subjectLogs.filter(l => l.status === 'absent').length;
+                    // cancelled is ignored for total
                     const total = present + absent;
 
                     statsData.push({
@@ -127,8 +123,6 @@ export function Attendance() {
             }
         } catch (error) {
             console.error('Error fetching data:', error);
-        } finally {
-
         }
     };
 
@@ -136,7 +130,7 @@ export function Attendance() {
         fetchAttendanceData();
     }, [selectedDate, user, view]);
 
-    const markAttendance = async (subjectCode: string, status: 'present' | 'absent') => {
+    const markAttendance = async (subjectCode: string, status: 'present' | 'absent' | 'cancelled') => {
         if (!user) return;
 
         const dateStr = formatDate(selectedDate);
@@ -181,8 +175,6 @@ export function Attendance() {
 
     const daysList = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
     const isSpecialDay = getDayName(selectedDate) === 'Saturday' || dayOrder !== null;
-
-
 
     return (
         <div className="p-2 md:p-6 space-y-8 pb-32 animate-fade-in-up md:px-4">
@@ -289,6 +281,7 @@ export function Attendance() {
                                 const log = attendanceLogs.find(l => l.subject_code === cls.subject_code);
                                 const isPresent = log?.status === 'present';
                                 const isAbsent = log?.status === 'absent';
+                                const isCancelled = log?.status === 'cancelled';
 
                                 return (
                                     <div key={cls.id} className="card-base p-6 rounded-[1.5rem] group hover:border-slate-300 transition-all duration-300">
@@ -312,7 +305,7 @@ export function Attendance() {
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-3">
+                                        <div className="grid grid-cols-3 gap-3">
                                             <button
                                                 onClick={() => markAttendance(cls.subject_code, 'present')}
                                                 className={cn(
@@ -323,7 +316,8 @@ export function Attendance() {
                                                 )}
                                             >
                                                 {isPresent ? <Check className="h-4 w-4" /> : <div className="w-4 h-4 rounded-full border-2 border-slate-200 group-hover:border-emerald-400" />}
-                                                <span>Present</span>
+                                                <span className="hidden md:inline">Present</span>
+                                                <span className="md:hidden">P</span>
                                             </button>
                                             <button
                                                 onClick={() => markAttendance(cls.subject_code, 'absent')}
@@ -335,7 +329,21 @@ export function Attendance() {
                                                 )}
                                             >
                                                 {isAbsent ? <X className="h-4 w-4" /> : <div className="w-4 h-4 rounded-full border-2 border-slate-200 group-hover:border-red-400" />}
-                                                <span>Absent</span>
+                                                <span className="hidden md:inline">Absent</span>
+                                                <span className="md:hidden">A</span>
+                                            </button>
+                                            <button
+                                                onClick={() => markAttendance(cls.subject_code, 'cancelled')}
+                                                className={cn(
+                                                    "flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all duration-300 border-2",
+                                                    isCancelled
+                                                        ? "bg-amber-50 border-amber-500 text-amber-700"
+                                                        : "bg-white border-slate-100 text-slate-400 hover:border-amber-200 hover:text-amber-600"
+                                                )}
+                                            >
+                                                {isCancelled ? <Ban className="h-4 w-4" /> : <Ban className="h-4 w-4 opacity-40 group-hover:opacity-100" />}
+                                                <span className="hidden md:inline">Cancelled</span>
+                                                <span className="md:hidden">C</span>
                                             </button>
                                         </div>
                                     </div>
