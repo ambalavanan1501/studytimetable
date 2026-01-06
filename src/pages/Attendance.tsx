@@ -28,6 +28,7 @@ export function Attendance() {
     const [stats, setStats] = useState<CourseStats[]>([]);
     const [dayOrder, setDayOrder] = useState<string | null>(null);
     const [attendanceGoal, setAttendanceGoal] = useState(75);
+    const [overallAttendance, setOverallAttendance] = useState(0);
 
     const formatDate = (date: Date) => {
         return date.toISOString().split('T')[0];
@@ -102,6 +103,8 @@ export function Attendance() {
 
                 // 3. Calculate Stats
                 const statsData: CourseStats[] = [];
+                let totalPercentageSum = 0;
+
                 uniqueSubjects.forEach((name, code) => {
                     const subjectLogs = allLogs?.filter(l => l.subject_code === code) || [];
                     const present = subjectLogs.filter(l => l.status === 'present').length;
@@ -109,16 +112,21 @@ export function Attendance() {
                     // cancelled is ignored for total
                     const total = present + absent;
 
+                    const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
+                    totalPercentageSum += percentage;
+
                     statsData.push({
                         subject_name: name,
                         subject_code: code,
                         total_classes: total,
                         present,
                         absent,
-                        percentage: total > 0 ? Math.round((present / total) * 100) : 0
+                        percentage
                     });
                 });
 
+                const avg = statsData.length > 0 ? (totalPercentageSum / (statsData.length * 100)) * 100 : 0;
+                setOverallAttendance(avg);
                 setStats(statsData);
             }
         } catch (error) {
@@ -353,59 +361,81 @@ export function Attendance() {
                     </div>
                 </>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {stats.length === 0 ? (
-                        <div className="col-span-full text-center py-20 text-slate-400 card-base rounded-[2rem] border-dashed border-slate-200">
-                            <p className="text-xl font-bold">No attendance data yet</p>
-                            <p className="text-sm mt-2 opacity-60">Start marking your classes to see stats!</p>
-                        </div>
-                    ) : (
-                        stats.map((stat) => {
-                            return (
-                                <div key={stat.subject_code} className="card-base p-6 rounded-[1.5rem] hover:shadow-lg transition-all duration-300 flex flex-col justify-between">
-                                    <div className="mb-6">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <div className="flex-1 pr-4">
-                                                <h3 className="font-bold text-slate-900 text-lg leading-tight line-clamp-1" title={stat.subject_name}>{stat.subject_name}</h3>
-                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.subject_code}</span>
-                                            </div>
-                                            <div className={cn(
-                                                "text-xl font-black tabular-nums",
-                                                stat.percentage >= attendanceGoal ? "text-emerald-600" : "text-red-500"
-                                            )}>
-                                                {stat.percentage}%
-                                            </div>
-                                        </div>
-
-                                        {/* Minimal Progress Bar */}
-                                        <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                                            <div
-                                                className={cn("h-full rounded-full transition-all duration-1000 ease-out", stat.percentage >= attendanceGoal ? "bg-emerald-500" : "bg-red-500")}
-                                                style={{ width: `${stat.percentage}%` }}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center justify-between text-xs font-bold text-slate-500 border-t border-slate-50 pt-4">
-                                        <div className="flex flex-col items-center">
-                                            <span className="text-emerald-600">{stat.present}</span>
-                                            <span className="text-[9px] uppercase tracking-widest text-slate-300">Pres</span>
-                                        </div>
-                                        <div className="w-px h-4 bg-slate-100" />
-                                        <div className="flex flex-col items-center">
-                                            <span className="text-red-500">{stat.absent}</span>
-                                            <span className="text-[9px] uppercase tracking-widest text-slate-300">Abs</span>
-                                        </div>
-                                        <div className="w-px h-4 bg-slate-100" />
-                                        <div className="flex flex-col items-center">
-                                            <span className="text-slate-700">{stat.total_classes}</span>
-                                            <span className="text-[9px] uppercase tracking-widest text-slate-300">Tot</span>
-                                        </div>
-                                    </div>
+                <div className="space-y-6">
+                    {/* Overall Attendance Card */}
+                    {stats.length > 0 && (
+                        <div className="card-base p-6 rounded-[2rem] bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-xl overflow-hidden relative">
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                            <div className="relative z-10 flex flex-col items-center justify-center text-center">
+                                <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-2">Overall Attendance</h3>
+                                <div className="text-6xl font-black tracking-tighter mb-2">
+                                    {overallAttendance.toFixed(1)}%
                                 </div>
-                            );
-                        })
+                                <div className={cn(
+                                    "px-4 py-1 rounded-full text-xs font-bold",
+                                    overallAttendance >= attendanceGoal ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"
+                                )}>
+                                    {overallAttendance >= attendanceGoal ? "On Track" : "Needs Improvement"}
+                                </div>
+                            </div>
+                        </div>
                     )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {stats.length === 0 ? (
+                            <div className="col-span-full text-center py-20 text-slate-400 card-base rounded-[2rem] border-dashed border-slate-200">
+                                <p className="text-xl font-bold">No attendance data yet</p>
+                                <p className="text-sm mt-2 opacity-60">Start marking your classes to see stats!</p>
+                            </div>
+                        ) : (
+                            stats.map((stat) => {
+                                return (
+                                    <div key={stat.subject_code} className="card-base p-6 rounded-[1.5rem] hover:shadow-lg transition-all duration-300 flex flex-col justify-between">
+                                        <div className="mb-6">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <div className="flex-1 pr-4">
+                                                    <h3 className="font-bold text-slate-900 text-lg leading-tight line-clamp-1" title={stat.subject_name}>{stat.subject_name}</h3>
+                                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.subject_code}</span>
+                                                </div>
+                                                <div className={cn(
+                                                    "text-xl font-black tabular-nums",
+                                                    stat.percentage >= attendanceGoal ? "text-emerald-600" : "text-red-500"
+                                                )}>
+                                                    {stat.percentage}%
+                                                </div>
+                                            </div>
+
+                                            {/* Minimal Progress Bar */}
+                                            <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                                                <div
+                                                    className={cn("h-full rounded-full transition-all duration-1000 ease-out", stat.percentage >= attendanceGoal ? "bg-emerald-500" : "bg-red-500")}
+                                                    style={{ width: `${stat.percentage}%` }}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between text-xs font-bold text-slate-500 border-t border-slate-50 pt-4">
+                                            <div className="flex flex-col items-center">
+                                                <span className="text-emerald-600">{stat.present}</span>
+                                                <span className="text-[9px] uppercase tracking-widest text-slate-300">Pres</span>
+                                            </div>
+                                            <div className="w-px h-4 bg-slate-100" />
+                                            <div className="flex flex-col items-center">
+                                                <span className="text-red-500">{stat.absent}</span>
+                                                <span className="text-[9px] uppercase tracking-widest text-slate-300">Abs</span>
+                                            </div>
+                                            <div className="w-px h-4 bg-slate-100" />
+                                            <div className="flex flex-col items-center">
+                                                <span className="text-slate-700">{stat.total_classes}</span>
+                                                <span className="text-[9px] uppercase tracking-widest text-slate-300">Tot</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
+
+                    </div>
                 </div>
             )}
         </div>
