@@ -68,7 +68,7 @@ export function Dashboard() {
                     supabase.from('profiles').select('full_name, attendance_goal, cgpa, credits, avatar_url').eq('id', user.id).single(),
                     supabase.from('timetable_entries').select('*').eq('user_id', user.id).eq('day', queryDay),
                     supabase.from('smart_timetable_entries').select('*').eq('user_id', user.id).eq('day', queryDay),
-                    supabase.from('attendance_logs').select('status').eq('user_id', user.id)
+                    supabase.from('attendance_logs').select('subject_code, status').eq('user_id', user.id)
                 ]);
 
                 if (profileRes.data) {
@@ -92,11 +92,43 @@ export function Dashboard() {
                 setOngoingClass(current || null);
                 setNextClass(upcoming || all[0]);
 
-                if (logsRes.data && logsRes.data.length > 0) {
-                    const present = logsRes.data.filter(l => l.status === 'present').length;
-                    const total = logsRes.data.length;
-                    setAttendancePercentage(Math.round((present / total) * 100));
-                    syncHealth(Math.round((present / total) * 100));
+                // Fetch all unique subjects to calculate proper stats
+                const [allBasicRes, allSmartRes] = await Promise.all([
+                    supabase.from('timetable_entries').select('subject_name, subject_code').eq('user_id', user.id),
+                    supabase.from('smart_timetable_entries').select('subject_name, subject_code').eq('user_id', user.id)
+                ]);
+
+                const uniqueSubjects = new Map();
+                [...(allBasicRes.data || []), ...(allSmartRes.data || [])].forEach(s => {
+                    if (!uniqueSubjects.has(s.subject_code)) {
+                        uniqueSubjects.set(s.subject_code, s.subject_name);
+                    }
+                });
+
+                if (logsRes.data) {
+                    const allLogs = logsRes.data;
+                    let totalPercentageSum = 0;
+                    let subjectCount = 0;
+
+                    uniqueSubjects.forEach((_, code) => {
+                        const subjectLogs = allLogs.filter(l => l.subject_code === code) || [];
+                        const present = subjectLogs.filter(l => l.status === 'present').length;
+                        const absent = subjectLogs.filter(l => l.status === 'absent').length;
+                        const total = present + absent;
+
+                        if (total > 0) {
+                            const percentage = Math.round((present / total) * 100);
+                            totalPercentageSum += percentage;
+                            subjectCount++;
+                        }
+                    });
+
+                    const avg = subjectCount > 0 ? (totalPercentageSum / subjectCount) : 0;
+                    // Round to nearest integer as requested (94.5 -> 95, 94.3 -> 94)
+                    const finalPercentage = Math.round(avg);
+
+                    setAttendancePercentage(finalPercentage);
+                    syncHealth(finalPercentage);
                 }
             } catch (error) {
                 console.error('Error fetching dashboard data:', error);

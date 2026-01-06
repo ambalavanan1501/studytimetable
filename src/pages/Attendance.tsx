@@ -125,8 +125,8 @@ export function Attendance() {
                     });
                 });
 
-                const avg = statsData.length > 0 ? (totalPercentageSum / (statsData.length * 100)) * 100 : 0;
-                setOverallAttendance(avg);
+                const avg = statsData.length > 0 ? (totalPercentageSum / statsData.length) : 0;
+                setOverallAttendance(Math.round(avg));
                 setStats(statsData);
             }
         } catch (error) {
@@ -369,7 +369,7 @@ export function Attendance() {
                             <div className="relative z-10 flex flex-col items-center justify-center text-center">
                                 <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-2">Overall Attendance</h3>
                                 <div className="text-6xl font-black tracking-tighter mb-2">
-                                    {overallAttendance.toFixed(1)}%
+                                    {Math.round(overallAttendance)}%
                                 </div>
                                 <div className={cn(
                                     "px-4 py-1 rounded-full text-xs font-bold",

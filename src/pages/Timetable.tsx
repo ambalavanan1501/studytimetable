@@ -12,6 +12,8 @@ export function Timetable() {
     const [isSmartAddOpen, setIsSmartAddOpen] = useState(false);
     const [selectedDay, setSelectedDay] = useState<string>('Monday');
     const [entries, setEntries] = useState<any[]>([]);
+    const [attendanceMap, setAttendanceMap] = useState<Record<string, number>>({});
+    const [attendanceGoal, setAttendanceGoal] = useState(75);
     const [loading, setLoading] = useState(true);
 
     // Permanently remove weekends as per user request
@@ -55,6 +57,50 @@ export function Timetable() {
             setLoading(false);
         }
     }, [user, selectedDay]); // Dependencies for useCallback
+
+    const fetchAttendanceStats = useCallback(async () => {
+        if (!user) return;
+        try {
+            const [logsRes, profileRes] = await Promise.all([
+                supabase.from('attendance_logs').select('subject_code, status').eq('user_id', user.id),
+                supabase.from('profiles').select('attendance_goal').eq('id', user.id).single()
+            ]);
+
+            if (profileRes.data?.attendance_goal) {
+                setAttendanceGoal(profileRes.data.attendance_goal);
+            }
+
+            if (logsRes.data) {
+                const stats: Record<string, number> = {};
+                const subjectGroups: Record<string, { present: number, total: number }> = {};
+
+                logsRes.data.forEach(log => {
+                    if (!subjectGroups[log.subject_code]) {
+                        subjectGroups[log.subject_code] = { present: 0, total: 0 };
+                    }
+                    if (log.status === 'present') {
+                        subjectGroups[log.subject_code].present++;
+                        subjectGroups[log.subject_code].total++;
+                    } else if (log.status === 'absent') {
+                        subjectGroups[log.subject_code].total++;
+                    }
+                });
+
+                Object.keys(subjectGroups).forEach(code => {
+                    const { present, total } = subjectGroups[code];
+                    stats[code] = total > 0 ? Math.round((present / total) * 100) : 0;
+                });
+
+                setAttendanceMap(stats);
+            }
+        } catch (error) {
+            console.error("Error fetching attendance stats:", error);
+        }
+    }, [user]);
+
+    useEffect(() => {
+        fetchAttendanceStats();
+    }, [fetchAttendanceStats]);
 
     // Fetch Timetable Entries (Run when day changes)
     useEffect(() => {
@@ -147,6 +193,15 @@ export function Timetable() {
                                             )}>
                                                 {entry.type}
                                             </span>
+                                            {/* Attendance Badge */}
+                                            {attendanceMap[entry.subject_code] !== undefined && (
+                                                <span className={cn(
+                                                    "text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded text-white ml-auto",
+                                                    attendanceMap[entry.subject_code] >= attendanceGoal ? "bg-emerald-500" : "bg-red-500"
+                                                )}>
+                                                    {attendanceMap[entry.subject_code]}%
+                                                </span>
+                                            )}
                                         </div>
                                         <h3 className="font-bold text-lg text-slate-900 leading-tight group-hover:text-indigo-600 transition-colors">{entry.subject_name}</h3>
                                         <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{entry.subject_code}</p>
